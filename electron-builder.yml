@@ -4,7 +4,7 @@ copyright: Copyright © 2026 Hardik Prajapati
 
 directories:
   output: dist
-  buildResources: resources
+  buildResources: asset
 
 files:
   - dist-electron/**/*
@@ -13,7 +13,7 @@ files:
   - package.json
 
 win:
-  icon: asset/icon.png
+  icon: asset/icon.ico
   target:
     - target: nsis
       arch:
@@ -33,6 +33,8 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Reco
+  installerIcon: asset/icon.ico
+  uninstallerIcon: asset/icon.ico
 
 portable:
   artifactName: ${productName}-Portable-${version}.${ext}
