@@ -126,69 +126,65 @@ const ToolbarApp: React.FC = () => {
 
   return (
     <div className="w-screen h-screen flex items-center justify-center p-2 bg-transparent select-none overflow-hidden font-sans">
-      {/* Normalized Floating Toolbar Container */}
-      <div className="h-[52px] px-3 py-2 bg-[#090d16] text-slate-100 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-4 mx-auto">
-        {/* GROUP 1: Drag + Status + Record/Stop (8px internal gap) */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Drag Handle (36x36px with 16px icon) */}
+      {/* Normalized Toolbar Container */}
+      <div className="toolbar-container">
+        {/* GROUP 1: Drag + Status + Record/Stop */}
+        <div className="toolbar-group">
+          {/* Horizontal Drag Grip (36x36px target, centered 16px horizontal grip icon) */}
           <div
-            className="app-draggable cursor-move w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white transition rounded-[10px] hover:bg-white/10"
+            className="app-draggable toolbar-drag-handle cursor-grab active:cursor-grabbing"
             title="Drag Toolbar Anywhere"
           >
             <GripHorizontal className="w-4 h-4" />
           </div>
 
-          {/* Status Badge (36px height, 12px px, 8px gap) */}
-          <div className="h-9 px-3 bg-[#131927] rounded-[10px] border border-white/10 flex items-center gap-2 shrink-0 app-no-drag">
+          {/* Status Badge: 14px internal padding, 8px dot-to-text gap */}
+          <div className="toolbar-pill-status app-no-drag">
             {isStopping ? (
-              <span className="text-xs font-bold text-amber-400 animate-pulse">Saving...</span>
+              <span className="text-amber-400 animate-pulse">Saving...</span>
             ) : isRecording ? (
               <>
-                <div className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-rose-500 animate-ping'}`} />
-                <span className="text-xs font-mono font-extrabold tracking-wider text-white">
+                <div className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-rose-500 animate-ping'} shrink-0`} />
+                <span className="font-mono text-white tracking-wider">
                   {formatTime(recordingDuration)}
                 </span>
               </>
             ) : (
               <>
-                <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse" />
-                <span className="text-xs font-bold text-slate-200">Ready</span>
+                <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse shrink-0" />
+                <span>Ready</span>
               </>
             )}
           </div>
 
-          {/* Primary Record / Pause / Done Action (36px height, 16px px, 8px gap) */}
+          {/* Primary REC Button: 18px horizontal padding, 8px gap */}
           <div className="app-no-drag shrink-0">
             {!isRecording ? (
               <button
                 onClick={handleStartRecord}
-                className="h-9 px-4 rounded-[10px] bg-gradient-to-r from-rose-600 via-rose-500 to-rose-600 hover:from-rose-500 hover:to-rose-400 text-white text-xs font-extrabold shadow-md shadow-rose-600/40 hover:shadow-rose-600/60 transition transform hover:scale-[1.02] active:scale-95 flex items-center gap-2 cursor-pointer shrink-0 animate-record-pulse"
+                className="toolbar-btn-rec"
               >
-                <div className="w-2 h-2 rounded-full bg-white animate-ping" />
+                <div className="w-2 h-2 rounded-full bg-white animate-ping shrink-0" />
                 <span>REC</span>
               </button>
             ) : (
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleTogglePause}
-                  className={`h-9 px-3 rounded-[10px] border transition cursor-pointer flex items-center gap-2 text-xs font-bold ${
-                    isPaused
-                      ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
-                      : 'bg-[#131927] border-white/15 text-slate-200 hover:bg-slate-800'
-                  }`}
+                  className="toolbar-btn-text"
                   title={isPaused ? 'Resume Recording' : 'Pause Recording'}
                 >
-                  {isPaused ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4" />}
+                  {isPaused ? <Play className="w-4 h-4 fill-current shrink-0" /> : <Pause className="w-4 h-4 shrink-0" />}
                   <span>{isPaused ? 'Resume' : 'Pause'}</span>
                 </button>
 
                 <button
                   onClick={handleStopRecord}
                   disabled={isStopping}
-                  className="h-9 px-3.5 rounded-[10px] bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold transition shadow-md shadow-rose-600/30 active:scale-95 cursor-pointer flex items-center gap-2"
+                  className="toolbar-btn-done"
                   title="Stop & Save Recording"
                 >
-                  <Square className="w-3.5 h-3.5 fill-current" />
+                  <Square className="w-3.5 h-3.5 fill-current shrink-0" />
                   <span>Done</span>
                 </button>
               </div>
@@ -196,16 +192,16 @@ const ToolbarApp: React.FC = () => {
           </div>
         </div>
 
-        {/* Group Divider (1px width, 20px height) */}
-        <div className="w-[1px] h-5 bg-white/15 shrink-0" />
+        {/* Group Divider */}
+        <div className="toolbar-divider" />
 
-        {/* GROUP 2: Audio & Media Group (8px internal gap) */}
-        <div className="flex items-center gap-2 app-no-drag shrink-0">
-          {/* Microphone + Live Level Meter (36px height, 10px px, 8px gap) */}
-          <div className="h-9 px-2.5 bg-[#131927] rounded-[10px] border border-white/10 flex items-center gap-2">
+        {/* GROUP 2: Audio & Media Group */}
+        <div className="toolbar-group app-no-drag">
+          {/* Microphone + Level Meter: 12px internal padding */}
+          <div className="toolbar-mic-container">
             <button
               onClick={toggleMic}
-              className={`transition cursor-pointer ${
+              className={`cursor-pointer transition shrink-0 ${
                 settings.captureMicrophone ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-300'
               }`}
               title={settings.captureMicrophone ? 'Microphone On' : 'Microphone Muted'}
@@ -214,7 +210,7 @@ const ToolbarApp: React.FC = () => {
             </button>
 
             {settings.captureMicrophone && (
-              <div className="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden flex items-center p-0.5 border border-white/5">
+              <div className="w-14 h-2 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-white/5 shrink-0 flex items-center">
                 <div
                   className={`h-full rounded-full transition-all duration-75 ${
                     isClipping ? 'bg-rose-500' : micLevel > 70 ? 'bg-amber-400' : 'bg-emerald-400'
@@ -228,10 +224,8 @@ const ToolbarApp: React.FC = () => {
           {/* System Audio Toggle (36x36px) */}
           <button
             onClick={toggleSystemAudio}
-            className={`w-9 h-9 rounded-[10px] border transition cursor-pointer flex items-center justify-center ${
-              settings.captureSystemAudio
-                ? 'bg-[#131927] border-indigo-500/40 text-indigo-400'
-                : 'bg-[#131927]/60 border-white/10 text-slate-500 hover:text-slate-300'
+            className={`toolbar-icon-btn ${
+              settings.captureSystemAudio ? 'text-indigo-400 border-indigo-500/40' : 'text-slate-500'
             }`}
             title={settings.captureSystemAudio ? 'System Sound On' : 'System Sound Muted'}
           >
@@ -241,10 +235,8 @@ const ToolbarApp: React.FC = () => {
           {/* Webcam Toggle (36x36px) */}
           <button
             onClick={toggleWebcam}
-            className={`w-9 h-9 rounded-[10px] border transition cursor-pointer flex items-center justify-center ${
-              settings.showWebcam
-                ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm shadow-indigo-600/30'
-                : 'bg-[#131927]/60 border-white/10 text-slate-400 hover:text-slate-200'
+            className={`toolbar-icon-btn ${
+              settings.showWebcam ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm shadow-indigo-600/30' : 'text-slate-400'
             }`}
             title="Toggle Webcam Picture-in-Picture"
           >
@@ -253,24 +245,24 @@ const ToolbarApp: React.FC = () => {
         </div>
 
         {/* Group Divider */}
-        <div className="w-[1px] h-5 bg-white/15 shrink-0" />
+        <div className="toolbar-divider" />
 
-        {/* GROUP 3: Tools & Secondary Group (8px internal gap) */}
-        <div className="flex items-center gap-2 app-no-drag shrink-0">
-          {/* Full Screen Button (36px height, 12px px, 8px gap) */}
+        {/* GROUP 3: Tools & Secondary Group */}
+        <div className="toolbar-group app-no-drag">
+          {/* Full Screen Button: 14px horizontal padding, 8px gap */}
           <button
             onClick={handleSetFullScreen}
-            className="h-9 px-3 rounded-[10px] bg-[#131927] hover:bg-slate-800 text-slate-200 hover:text-white border border-white/10 transition text-xs font-semibold flex items-center gap-2 cursor-pointer"
+            className="toolbar-btn-text"
             title="Expand Recording Frame to Full Screen"
           >
-            <Maximize2 className="w-4 h-4 text-indigo-400" />
+            <Maximize2 className="w-4 h-4 text-indigo-400 shrink-0" />
             <span>Full Screen</span>
           </button>
 
           {/* Library Button (36x36px) */}
           <button
             onClick={() => window.electronAPI.openDashboard('library')}
-            className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-[#131927]/70 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 transition cursor-pointer"
+            className="toolbar-icon-btn"
             title="Recordings History"
           >
             <Film className="w-4 h-4" />
@@ -279,7 +271,7 @@ const ToolbarApp: React.FC = () => {
           {/* Settings Button (36x36px) */}
           <button
             onClick={() => window.electronAPI.openDashboard('settings')}
-            className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-[#131927]/70 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 transition cursor-pointer"
+            className="toolbar-icon-btn"
             title="Settings"
           >
             <Settings className="w-4 h-4" />
@@ -287,13 +279,13 @@ const ToolbarApp: React.FC = () => {
         </div>
 
         {/* Group Divider */}
-        <div className="w-[1px] h-5 bg-white/15 shrink-0" />
+        <div className="toolbar-divider" />
 
-        {/* GROUP 4: Window Controls (32x32px secondary controls, 8px gap) */}
-        <div className="flex items-center gap-2 app-no-drag shrink-0">
+        {/* GROUP 4: Window Controls (32x32px) */}
+        <div className="toolbar-group app-no-drag">
           <button
             onClick={() => window.electronAPI.minimizeApp()}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer"
+            className="toolbar-window-btn"
             title="Minimize"
           >
             <Minus className="w-4 h-4" />
@@ -301,7 +293,7 @@ const ToolbarApp: React.FC = () => {
 
           <button
             onClick={() => window.electronAPI.quitApp()}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition cursor-pointer"
+            className="toolbar-window-btn hover:!bg-rose-500/20 hover:!text-rose-400"
             title="Exit Reco"
           >
             <X className="w-4 h-4" />

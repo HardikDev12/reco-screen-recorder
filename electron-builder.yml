@@ -9,9 +9,11 @@ directories:
 files:
   - dist-electron/**/*
   - dist/**/*
+  - asset/**/*
   - package.json
 
 win:
+  icon: asset/icon.png
   target:
     - target: nsis
       arch:

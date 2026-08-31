@@ -44,36 +44,244 @@ html, body {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Glassmorphic Panel Utility */
-.glass-panel {
-  background: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--card-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-/* Pulsing Record Button */
-@keyframes recordPulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.6);
-  }
-  70% {
-    box-shadow: 0 0 0 16px rgba(244, 63, 94, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
-  }
-}
-
-.animate-record-pulse {
-  animation: recordPulse 2s infinite;
-}
-
 /* App Region Dragging */
 .app-draggable {
   -webkit-app-region: drag;
 }
 .app-no-drag {
   -webkit-app-region: no-drag;
+}
+
+/* ========================================================================= */
+/* IMPECCABLE NORMALIZED SELECTION FRAME STYLES                              */
+/* ========================================================================= */
+
+.frame-dimension-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  background-color: #090d16;
+  color: #f1f5f9;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.7);
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.frame-drag-center {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background-color: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 14px;
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.8);
+  cursor: move;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.frame-drag-center:hover {
+  transform: scale(1.05);
+  background-color: #121826;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* ========================================================================= */
+/* IMPECCABLE NORMALIZED TOOLBAR DESIGN SYSTEM TOKENS & STYLES               */
+/* ========================================================================= */
+
+.toolbar-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  height: 52px;
+  padding: 8px 14px;
+  background-color: #090d16;
+  color: #f1f5f9;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.8);
+  box-sizing: border-box;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.toolbar-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: #94a3b8;
+  border-radius: 10px;
+  cursor: grab;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.toolbar-drag-handle:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+.toolbar-drag-handle:active {
+  cursor: grabbing;
+}
+
+.toolbar-pill-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 6px 14px;
+  background-color: #131927;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f5f9;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.toolbar-btn-rec {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 6px 18px;
+  background: linear-gradient(135deg, #e11d48, #f43f5e);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.45);
+  cursor: pointer;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.toolbar-btn-rec:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 18px rgba(244, 63, 94, 0.6);
+}
+
+.toolbar-btn-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 6px 14px;
+  background-color: #131927;
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.toolbar-btn-text:hover {
+  background-color: #1e2638;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.toolbar-btn-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 6px 16px;
+  background-color: #e11d48;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.toolbar-btn-done:hover {
+  background-color: #f43f5e;
+}
+
+.toolbar-mic-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 6px 12px;
+  background-color: #131927;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.toolbar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: #131927;
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.toolbar-icon-btn:hover {
+  background-color: #1e2638;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.toolbar-window-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.toolbar-window-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background-color: rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+  margin: auto 0;
 }

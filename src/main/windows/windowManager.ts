@@ -41,6 +41,8 @@ export class WindowManager {
 
     this.currentFrameBounds = { x: frameX, y: frameY, width: frameW, height: frameH };
 
+    const appIcon = path.join(__dirname, '../../asset/icon.png');
+
     this.frameWindow = new BrowserWindow({
       width: frameW,
       height: frameH,
@@ -54,6 +56,7 @@ export class WindowManager {
       minHeight: 180,
       hasShadow: false,
       skipTaskbar: true,
+      icon: appIcon,
       backgroundColor: '#00000000',
       webPreferences: {
         preload: path.join(__dirname, '../preload/index.js'),
@@ -106,9 +109,9 @@ export class WindowManager {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
 
-    // Content-derived dimensions
-    const toolbarW = 790;
-    const toolbarH = 64;
+    const toolbarW = 840;
+    const toolbarH = 68;
+    const appIcon = path.join(__dirname, '../../asset/icon.png');
 
     this.toolbarWindow = new BrowserWindow({
       width: toolbarW,
@@ -121,6 +124,7 @@ export class WindowManager {
       resizable: false,
       hasShadow: false,
       skipTaskbar: false,
+      icon: appIcon,
       backgroundColor: '#00000000',
       webPreferences: {
         preload: path.join(__dirname, '../preload/index.js'),
@@ -171,6 +175,8 @@ export class WindowManager {
       return this.dashboardWindow;
     }
 
+    const appIcon = path.join(__dirname, '../../asset/icon.png');
+
     this.dashboardWindow = new BrowserWindow({
       width: 960,
       height: 640,
@@ -180,6 +186,7 @@ export class WindowManager {
       backgroundColor: '#0d1117',
       frame: true,
       autoHideMenuBar: true,
+      icon: appIcon,
       webPreferences: {
         preload: path.join(__dirname, '../preload/index.js'),
         nodeIntegration: false,
@@ -208,6 +215,7 @@ export class WindowManager {
 
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
+    const appIcon = path.join(__dirname, '../../asset/icon.png');
 
     this.webcamWindow = new BrowserWindow({
       width: 280,
@@ -223,6 +231,7 @@ export class WindowManager {
       maxWidth: 640,
       maxHeight: 480,
       skipTaskbar: true,
+      icon: appIcon,
       webPreferences: {
         preload: path.join(__dirname, '../preload/index.js'),
         nodeIntegration: false,

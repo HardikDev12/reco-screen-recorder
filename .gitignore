@@ -23,11 +23,15 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# IDE & Editors
+# IDE, Editors & Agent Configs
 .vscode/
 .idea/
 *.swp
 *.swo
+.agents/
+.gemini/
+doc/
+Untitled*
 
 # Temporary files
 *.tmp

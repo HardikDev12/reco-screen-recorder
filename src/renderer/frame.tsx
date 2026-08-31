@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Move, Maximize2 } from 'lucide-react';
+import { Move } from 'lucide-react';
 import './index.css';
 
 const FrameApp: React.FC = () => {
@@ -28,37 +28,36 @@ const FrameApp: React.FC = () => {
 
   return (
     <div className="w-screen h-screen relative bg-transparent select-none overflow-hidden p-2">
-      {/* ShowMore Red Dashed Recording Frame */}
+      {/* ShowMore-Inspired Selection Recording Boundary */}
       <div
         className={`w-full h-full relative border-2 border-dashed ${
-          isRecording ? 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]' : 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.12)]'
+          isRecording ? 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.3)]' : 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.15)]'
         } bg-transparent flex items-center justify-center`}
       >
-        {/* Top-Left Floating Dimension Badge */}
-        <div className="absolute top-2 left-2 pointer-events-auto z-20">
-          <div className="app-draggable cursor-move flex items-center gap-1.5 bg-slate-950/90 text-slate-100 border border-white/15 px-3 py-1 rounded-xl shadow-lg backdrop-blur-md">
-            <span className="text-rose-500 font-extrabold text-[11px]">RECO</span>
-            <span className="text-slate-600 text-[10px]">•</span>
-            <span className="font-mono text-xs font-bold text-slate-200">
+        {/* Top-Left Floating Dimension Badge: 16px internal padding, 16px offset from frame border */}
+        <div className="absolute top-4 left-4 pointer-events-auto z-20">
+          <div className="app-draggable frame-dimension-badge">
+            <span className="text-rose-500 font-extrabold text-xs tracking-wider">RECO</span>
+            <span className="text-slate-500 text-xs">•</span>
+            <span className="font-mono text-xs font-bold text-slate-100 tracking-wide">
               {size.width} × {size.height}
             </span>
           </div>
         </div>
 
-        {/* Center Prominent Drag Option Handle */}
+        {/* Center Drag Handle (44x44px hit area with original centered 16px Move icon) */}
         {!isRecording && (
           <div className="pointer-events-auto z-20">
             <div
-              className="app-draggable cursor-move flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-slate-950/90 hover:bg-slate-900 text-white font-bold text-xs border border-white/20 shadow-2xl backdrop-blur-xl transition hover:scale-105 active:scale-95"
+              className="app-draggable frame-drag-center"
               title="Click and drag anywhere to move recording frame"
             >
               <Move className="w-4 h-4 text-rose-500" />
-              <span>Drag to Move Frame</span>
             </div>
           </div>
         )}
 
-        {/* 8 Perfectly Aligned Handle Dots on the Exact Border Lines */}
+        {/* 8 Corner & Edge Resize Handles (14x14px with 2px white border) */}
         {!isRecording && (
           <>
             {/* Top Left */}

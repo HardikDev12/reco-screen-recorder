@@ -1,10 +1,18 @@
-# Reco — Screen Recorder
+<p align="center">
+  <img src="asset/logo-transparent.png" alt="Reco Logo" width="280"/>
+</p>
 
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-blue.svg)](https://github.com/HardikDev12/reco)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Author](https://img.shields.io/badge/author-Hardik%20Prajapati-orange.svg)](https://github.com/HardikDev12)
+<h1 align="center">Reco — Screen Recorder</h1>
 
-> A simple, high-quality, lightweight offline Windows screen recorder inspired by ShowMore.
+<p align="center">
+  <a href="https://github.com/HardikDev12/reco"><img src="https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-blue.svg" alt="Platform"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"/></a>
+  <a href="https://github.com/HardikDev12"><img src="https://img.shields.io/badge/author-Hardik%20Prajapati-orange.svg" alt="Author"/></a>
+</p>
+
+<p align="center">
+  <strong>A modern, lightweight, high-performance offline Windows screen recorder inspired by ShowMore.</strong>
+</p>
 
 ---
 
