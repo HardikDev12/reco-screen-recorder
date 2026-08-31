@@ -8,6 +8,9 @@ export const electronAPI = {
   sendRegionSelected: (bounds: RegionBounds) => ipcRenderer.send('capture:region-selected', bounds),
   cancelRegionSelection: () => ipcRenderer.send('capture:region-cancelled'),
 
+  // Mouse Pass-Through to underlying applications
+  setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send('overlay:set-ignore-mouse', ignore),
+
   // Primary Recording Lifecycle
   startRecording: (
     settings: RecorderSettings,

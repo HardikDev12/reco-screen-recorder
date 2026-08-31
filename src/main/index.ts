@@ -42,6 +42,14 @@ if (!gotTheLock) {
 
   // --- IPC Handlers ---
 
+  // Mouse Pass-Through to Desktop Apps
+  ipcMain.on('overlay:set-ignore-mouse', (_event, ignore: boolean) => {
+    const overlay = windowManager.getOverlayWindow();
+    if (overlay && !overlay.isDestroyed()) {
+      overlay.setIgnoreMouseEvents(ignore, { forward: true });
+    }
+  });
+
   // Source Enumeration
   ipcMain.handle('capture:get-sources', async () => {
     return await sourceManager.getAvailableSources();

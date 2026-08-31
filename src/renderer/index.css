@@ -7,8 +7,8 @@
   --danger-hover: #e11d48;
   --success: #10b981;
   --bg-dark: #0b0f17;
-  --card-bg: rgba(17, 24, 39, 0.75);
-  --card-border: rgba(255, 255, 255, 0.08);
+  --card-bg: rgba(17, 24, 39, 0.85);
+  --card-border: rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -19,10 +19,13 @@
   user-select: none;
 }
 
-body {
-  background-color: var(--bg-dark);
+html, body {
+  background: transparent !important;
+  background-color: transparent !important;
   color: #f1f5f9;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 /* Custom Scrollbars */
@@ -50,19 +53,6 @@ body {
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
-.glass-panel-interactive {
-  background: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--card-border);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.glass-panel-interactive:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px -4px rgba(99, 102, 241, 0.15);
-}
-
 /* Pulsing Record Button */
 @keyframes recordPulse {
   0% {
@@ -78,11 +68,6 @@ body {
 
 .animate-record-pulse {
   animation: recordPulse 2s infinite;
-}
-
-/* Audio Waveform Meter */
-.meter-bar {
-  transition: width 0.05s ease-out;
 }
 
 /* App Region Dragging */

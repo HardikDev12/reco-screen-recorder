@@ -69,8 +69,21 @@ const OverlayApp: React.FC = () => {
     stopRecording
   } = useMediaRecording();
 
-  // Load settings & pre-warm capture engine on launch
+  // Mouse Ignore handling: By default ignore mouse on transparent background so user can click underlying desktop apps
+  const enableMouseInteraction = () => {
+    window.electronAPI.setIgnoreMouseEvents(false);
+  };
+
+  const disableMouseInteraction = () => {
+    if (!isMoving && !isResizing) {
+      window.electronAPI.setIgnoreMouseEvents(true);
+    }
+  };
+
   useEffect(() => {
+    // Start with ignoring mouse events outside interactive elements
+    window.electronAPI.setIgnoreMouseEvents(true);
+
     window.electronAPI.getSettings().then((s) => {
       setSettings(s);
       preWarmCapturePipeline(s);
@@ -102,6 +115,7 @@ const OverlayApp: React.FC = () => {
   // Drag & Move Handlers
   const handleMouseDownMove = (e: React.MouseEvent) => {
     e.stopPropagation();
+    enableMouseInteraction();
     setIsMoving(true);
     dragStartPos.current = {
       mouseX: e.clientX,
@@ -112,6 +126,7 @@ const OverlayApp: React.FC = () => {
 
   const handleMouseDownResize = (handle: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    enableMouseInteraction();
     setIsResizing(handle);
     dragStartPos.current = {
       mouseX: e.clientX,
@@ -236,7 +251,7 @@ const OverlayApp: React.FC = () => {
     <div
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      className="w-screen h-screen relative bg-transparent select-none overflow-hidden"
+      className="w-screen h-screen relative bg-transparent select-none overflow-hidden pointer-events-none"
     >
       {/* ShowMore-Style Red Dashed Recording Frame */}
       <div
@@ -246,64 +261,91 @@ const OverlayApp: React.FC = () => {
           width: bounds.width,
           height: bounds.height
         }}
-        className={`absolute border-2 border-dashed ${
-          isRecording ? 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]' : 'border-rose-500/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.15)]'
-        } bg-transparent`}
+        className="absolute border-2 border-dashed border-rose-500 bg-transparent pointer-events-none"
       >
-        {/* Center Drag Grip (Active when not recording) */}
-        {!isRecording && (
-          <div
-            onMouseDown={handleMouseDownMove}
-            className="absolute inset-0 flex items-center justify-center cursor-move group opacity-0 hover:opacity-100 transition-opacity bg-black/5"
-          >
-            <div className="px-3.5 py-2 rounded-2xl bg-black/80 backdrop-blur-md text-white text-xs font-bold flex items-center gap-2 shadow-2xl pointer-events-none border border-white/10">
-              <Move className="w-4 h-4 text-rose-400" />
-              <span>Drag to Move Recording Frame</span>
-            </div>
-          </div>
-        )}
+        {/* Top/Bottom/Left/Right Interactive Border Hover Strips (enables resize/drag when hovering border) */}
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('t', e)}
+          className="absolute -top-2 left-0 right-0 h-4 cursor-ns-resize pointer-events-auto"
+        />
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('b', e)}
+          className="absolute -bottom-2 left-0 right-0 h-4 cursor-ns-resize pointer-events-auto"
+        />
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('l', e)}
+          className="absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize pointer-events-auto"
+        />
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('r', e)}
+          className="absolute top-0 bottom-0 -right-2 w-4 cursor-ew-resize pointer-events-auto"
+        />
 
-        {/* 8 Resize Handles */}
-        {!isRecording && (
-          <>
-            <div
-              onMouseDown={(e) => handleMouseDownResize('tl', e)}
-              className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-nwse-resize shadow-md"
-            />
-            <div
-              onMouseDown={(e) => handleMouseDownResize('t', e)}
-              className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-ns-resize shadow-md"
-            />
-            <div
-              onMouseDown={(e) => handleMouseDownResize('tr', e)}
-              className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-nesw-resize shadow-md"
-            />
-            <div
-              onMouseDown={(e) => handleMouseDownResize('r', e)}
-              className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-ew-resize shadow-md"
-            />
-            <div
-              onMouseDown={(e) => handleMouseDownResize('br', e)}
-              className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-nwse-resize shadow-md"
-            />
-            <div
-              onMouseDown={(e) => handleMouseDownResize('b', e)}
-              className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-ns-resize shadow-md"
-            />
-            <div
-              onMouseDown={(e) => handleMouseDownResize('bl', e)}
-              className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-nesw-resize shadow-md"
-            />
-            <div
-              onMouseDown={(e) => handleMouseDownResize('l', e)}
-              className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-ew-resize shadow-md"
-            />
-          </>
-        )}
+        {/* 8 Visible Resize Handles */}
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('tl', e)}
+          className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-nwse-resize shadow-md pointer-events-auto z-10"
+        />
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('t', e)}
+          className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-ns-resize shadow-md pointer-events-auto z-10"
+        />
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('tr', e)}
+          className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-nesw-resize shadow-md pointer-events-auto z-10"
+        />
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('r', e)}
+          className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-ew-resize shadow-md pointer-events-auto z-10"
+        />
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('br', e)}
+          className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-nwse-resize shadow-md pointer-events-auto z-10"
+        />
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('b', e)}
+          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-ns-resize shadow-md pointer-events-auto z-10"
+        />
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('bl', e)}
+          className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-nesw-resize shadow-md pointer-events-auto z-10"
+        />
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          onMouseDown={(e) => handleMouseDownResize('l', e)}
+          className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm cursor-ew-resize shadow-md pointer-events-auto z-10"
+        />
 
-        {/* Dimension & Status Tag */}
-        <div className="absolute -top-8 left-0 flex items-center gap-2">
-          <div className="px-2.5 py-1 bg-slate-900/90 text-slate-200 border border-white/10 rounded-lg text-[11px] font-mono font-bold shadow-lg backdrop-blur-md flex items-center gap-1.5">
+        {/* Top Dimension & Status Tag */}
+        <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
+          className="absolute -top-8 left-0 flex items-center gap-2 pointer-events-auto cursor-default"
+        >
+          <div className="px-2.5 py-1 bg-slate-950/90 text-slate-200 border border-white/10 rounded-lg text-[11px] font-mono font-bold shadow-lg backdrop-blur-md flex items-center gap-1.5">
             <span className="text-rose-400 font-extrabold">RECO</span>
             <span>•</span>
             <span>{bounds.width} × {bounds.height}</span>
@@ -312,14 +354,16 @@ const OverlayApp: React.FC = () => {
 
         {/* Minimal Attached Floating Control Capsule */}
         <div
+          onMouseEnter={enableMouseInteraction}
+          onMouseLeave={disableMouseInteraction}
           onMouseDown={(e) => e.stopPropagation()}
-          className="absolute -bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-950/95 text-slate-100 p-2 px-4 rounded-2xl shadow-2xl border border-white/15 backdrop-blur-xl shrink-0"
+          className="absolute -bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-950/95 text-slate-100 p-2 px-4 rounded-2xl shadow-2xl border border-white/15 backdrop-blur-xl shrink-0 pointer-events-auto z-20"
         >
           {/* Drag Handle */}
           <div
             onMouseDown={handleMouseDownMove}
-            className="cursor-move text-slate-500 hover:text-slate-300 p-1"
-            title="Move Frame"
+            className="cursor-move text-slate-400 hover:text-white p-1"
+            title="Drag to Move Frame"
           >
             <GripHorizontal className="w-4 h-4" />
           </div>
