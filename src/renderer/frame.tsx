@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Move, Maximize2 } from 'lucide-react';
-import { RegionBounds } from '../shared/types';
 import './index.css';
 
 const FrameApp: React.FC = () => {
@@ -28,48 +27,56 @@ const FrameApp: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-screen h-screen relative bg-transparent select-none overflow-hidden pointer-events-none">
-      {/* Red Dashed Border */}
+    <div className="w-screen h-screen relative bg-transparent select-none overflow-hidden p-2">
+      {/* ShowMore Red Dashed Recording Frame */}
       <div
-        className={`w-full h-full border-2 border-dashed ${
-          isRecording ? 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]' : 'border-rose-500/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.12)]'
-        } bg-transparent relative flex flex-col justify-between`}
+        className={`w-full h-full relative border-2 border-dashed ${
+          isRecording ? 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]' : 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.12)]'
+        } bg-transparent flex items-center justify-center`}
       >
-        {/* Top Drag Header Strip */}
-        <div className="w-full flex items-center justify-between p-2 pointer-events-auto">
-          {/* Dimension Tag + App Region Drag */}
-          <div className="app-draggable flex items-center gap-2 cursor-move bg-slate-950/90 text-slate-100 border border-white/10 px-3 py-1.5 rounded-xl shadow-lg backdrop-blur-md">
-            <span className="text-rose-400 font-extrabold text-[11px]">RECO</span>
-            <span className="text-slate-500">•</span>
+        {/* Top-Left Floating Dimension Badge */}
+        <div className="absolute top-2 left-2 pointer-events-auto z-20">
+          <div className="app-draggable cursor-move flex items-center gap-1.5 bg-slate-950/90 text-slate-100 border border-white/15 px-3 py-1 rounded-xl shadow-lg backdrop-blur-md">
+            <span className="text-rose-500 font-extrabold text-[11px]">RECO</span>
+            <span className="text-slate-600 text-[10px]">•</span>
             <span className="font-mono text-xs font-bold text-slate-200">
               {size.width} × {size.height}
             </span>
-            <Move className="w-3.5 h-3.5 text-slate-400 ml-1" />
           </div>
-
-          {/* Fullscreen shortcut */}
-          {!isRecording && (
-            <button
-              onClick={() => window.electronAPI.setFrameFullScreen()}
-              className="p-1.5 bg-slate-950/80 hover:bg-slate-900 text-slate-300 hover:text-white rounded-xl border border-white/10 shadow-lg backdrop-blur-md transition cursor-pointer"
-              title="Expand to Full Display"
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-            </button>
-          )}
         </div>
 
-        {/* 8 Visible Resize Corner & Edge Indicators */}
+        {/* Center Prominent Drag Option Handle */}
+        {!isRecording && (
+          <div className="pointer-events-auto z-20">
+            <div
+              className="app-draggable cursor-move flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-slate-950/90 hover:bg-slate-900 text-white font-bold text-xs border border-white/20 shadow-2xl backdrop-blur-xl transition hover:scale-105 active:scale-95"
+              title="Click and drag anywhere to move recording frame"
+            >
+              <Move className="w-4 h-4 text-rose-500" />
+              <span>Drag to Move Frame</span>
+            </div>
+          </div>
+        )}
+
+        {/* 8 Perfectly Aligned Handle Dots on the Exact Border Lines */}
         {!isRecording && (
           <>
-            <div className="absolute top-0 left-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-sm" />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-rose-500 border-2 border-white rounded-sm" />
-            <div className="absolute top-0 right-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-sm" />
-            <div className="absolute top-1/2 -translate-y-1/2 right-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-sm" />
-            <div className="absolute bottom-0 right-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-sm" />
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-rose-500 border-2 border-white rounded-sm" />
-            <div className="absolute bottom-0 left-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-sm" />
-            <div className="absolute top-1/2 -translate-y-1/2 left-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-sm" />
+            {/* Top Left */}
+            <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm shadow-md pointer-events-none z-10" />
+            {/* Top Center */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm shadow-md pointer-events-none z-10" />
+            {/* Top Right */}
+            <div className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm shadow-md pointer-events-none z-10" />
+            {/* Right Center */}
+            <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm shadow-md pointer-events-none z-10" />
+            {/* Bottom Right */}
+            <div className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm shadow-md pointer-events-none z-10" />
+            {/* Bottom Center */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm shadow-md pointer-events-none z-10" />
+            {/* Bottom Left */}
+            <div className="absolute bottom-0 left-0 -translate-x-1/2 translate-y-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm shadow-md pointer-events-none z-10" />
+            {/* Left Center */}
+            <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm shadow-md pointer-events-none z-10" />
           </>
         )}
       </div>

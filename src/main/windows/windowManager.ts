@@ -50,8 +50,8 @@ export class WindowManager {
       transparent: true,
       alwaysOnTop: true,
       resizable: true,
-      minWidth: 200,
-      minHeight: 150,
+      minWidth: 240,
+      minHeight: 180,
       hasShadow: false,
       skipTaskbar: true,
       backgroundColor: '#00000000',
@@ -108,11 +108,14 @@ export class WindowManager {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
 
+    const toolbarW = 720;
+    const toolbarH = 70;
+
     this.toolbarWindow = new BrowserWindow({
-      width: 620,
-      height: 64,
-      x: Math.round(width / 2 - 310),
-      y: height - 85,
+      width: toolbarW,
+      height: toolbarH,
+      x: Math.round(width / 2 - toolbarW / 2),
+      y: height - toolbarH - 20,
       frame: false,
       transparent: true,
       alwaysOnTop: true,
@@ -157,7 +160,8 @@ export class WindowManager {
   public setFrameFullScreen(): void {
     if (this.frameWindow && !this.frameWindow.isDestroyed()) {
       const primaryDisplay = screen.getPrimaryDisplay();
-      this.frameWindow.setBounds(primaryDisplay.bounds);
+      const { x, y, width, height } = primaryDisplay.bounds;
+      this.frameWindow.setBounds({ x, y, width, height });
     }
   }
 
