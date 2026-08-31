@@ -8,7 +8,7 @@
 ---
 
 ## What is Covered
-This copyright and the accompanying [MIT License](LICENSE) apply to all original works created specifically for the RECO project, including:
+This copyright and the accompanying [MIT License](../LICENSE) apply to all original works created specifically for the RECO project, including:
 
 1. **Source Code**: All original TypeScript, JavaScript, HTML, CSS, and packaging scripts located in this repository.
 2. **User Interface & Experience**: Original layout, design tokens, responsive frame overlay, and custom toolbar implementations.

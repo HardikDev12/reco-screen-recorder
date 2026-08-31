@@ -7,12 +7,12 @@ Please read these Terms of Use ("Terms") before using the RECO screen recording 
 ---
 
 ## 1. Acceptance of Terms
-By downloading, installing, or using RECO, you agree to be bound by these Terms and the accompanying [MIT License](LICENSE). If you do not agree to these Terms, do not install or use the Application.
+By downloading, installing, or using RECO, you agree to be bound by these Terms and the accompanying [MIT License](../LICENSE). If you do not agree to these Terms, do not install or use the Application.
 
 ---
 
 ## 2. License Grant
-RECO is provided under the terms of the MIT License. You are granted the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software subject to the conditions in the [LICENSE](LICENSE) file.
+RECO is provided under the terms of the MIT License. You are granted the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software subject to the conditions in the [LICENSE](../LICENSE) file.
 
 ---
 

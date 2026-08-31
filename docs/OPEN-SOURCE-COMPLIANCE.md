@@ -5,7 +5,7 @@ This document records the provenance, licensing, and compliance obligations for 
 ---
 
 ## 1. Compliance Principles
-RECO is released under the permissive [MIT License](LICENSE). In distributing RECO, the project adheres to all upstream license requirements, including preservation of copyright notices, disclaimers of warranty, and attribution requirements.
+RECO is released under the permissive [MIT License](../LICENSE). In distributing RECO, the project adheres to all upstream license requirements, including preservation of copyright notices, disclaimers of warranty, and attribution requirements.
 
 ---
 

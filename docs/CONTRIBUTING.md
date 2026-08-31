@@ -42,4 +42,4 @@ All contributors are expected to adhere to our [Code of Conduct](CODE_OF_CONDUCT
 ---
 
 ## Licensing of Contributions
-By submitting a Pull Request, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).
+By submitting a Pull Request, you agree that your contributions will be licensed under the project's [MIT License](../LICENSE).

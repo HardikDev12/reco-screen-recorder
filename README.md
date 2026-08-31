@@ -91,19 +91,19 @@ RECO is open-source software released under the **[MIT License](LICENSE)**.
 
 Copyright (c) 2026 **Hardik Prajapati**.
 
-Third-party dependencies, libraries, codecs, and bundled binaries are licensed under their respective terms. For complete details, see:
+All third-party dependencies, libraries, codecs, and bundled binaries are licensed under their respective terms. For complete documentation, see the [`docs/`](docs/) directory:
 
 * 📜 **[LICENSE](LICENSE)**: Full MIT License text.
-* 📦 **[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)**: Third-party attributions and upstream licenses.
-* ⚖️ **[COPYRIGHT.md](COPYRIGHT.md)**: Copyright and ownership scope.
-* 🔒 **[PRIVACY.md](PRIVACY.md)**: Privacy policy & local-only offline guarantees.
-* 📋 **[TERMS.md](TERMS.md)**: Terms of use and user responsibilities.
-* ⚠️ **[DISCLAIMER.md](DISCLAIMER.md)**: General software and recording disclaimer.
-* 🎙️ **[RECORDING-CONSENT.md](RECORDING-CONSENT.md)**: Multi-party recording consent information.
-* 🛡️ **[SECURITY.md](SECURITY.md)**: Vulnerability disclosure guidelines.
-* 🏷️ **[TRADEMARKS.md](TRADEMARKS.md)**: Brand and logo usage guidelines.
-* 🤝 **[CONTRIBUTING.md](CONTRIBUTING.md)**: Developer contribution guidelines.
-* 📜 **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)**: Community standards.
+* 📦 **[docs/THIRD-PARTY-NOTICES.md](docs/THIRD-PARTY-NOTICES.md)**: Third-party attributions and upstream licenses.
+* ⚖️ **[docs/COPYRIGHT.md](docs/COPYRIGHT.md)**: Copyright and ownership scope.
+* 🔒 **[docs/PRIVACY.md](docs/PRIVACY.md)**: Privacy policy & local-only offline guarantees.
+* 📋 **[docs/TERMS.md](docs/TERMS.md)**: Terms of use and user responsibilities.
+* ⚠️ **[docs/DISCLAIMER.md](docs/DISCLAIMER.md)**: General software and recording disclaimer.
+* 🎙️ **[docs/RECORDING-CONSENT.md](docs/RECORDING-CONSENT.md)**: Multi-party recording consent information.
+* 🛡️ **[docs/SECURITY.md](docs/SECURITY.md)**: Vulnerability disclosure guidelines.
+* 🏷️ **[docs/TRADEMARKS.md](docs/TRADEMARKS.md)**: Brand and logo usage guidelines.
+* 🤝 **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)**: Developer contribution guidelines.
+* 📜 **[docs/CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md)**: Community standards.
 
 ---
 

@@ -6,7 +6,7 @@ This document clarifies the policies regarding the name "RECO", the project logo
 ---
 
 ## 2. Distinction from Software License
-* The [MIT License](LICENSE) governing the RECO software code grants broad rights to run, copy, modify, and distribute the program source and compiled binaries.
+* The [MIT License](../LICENSE) governing the RECO software code grants broad rights to run, copy, modify, and distribute the program source and compiled binaries.
 * However, the MIT License **does not grant any trademark license** or authorization to use the RECO name, brand identity, or visual logos in a manner that implies endorsement, sponsorship, or official affiliation.
 
 ---
