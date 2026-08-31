@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { RecorderSettings, RecordingItem, RegionBounds } from '../../shared/types';
+import { RecorderSettings, RegionBounds } from '../../shared/types';
 
-export function useMediaRecording() {
+export const useMediaRecording = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
@@ -10,42 +10,44 @@ export function useMediaRecording() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<any>(null);
-  const recordingAudioContextRef = useRef<AudioContext | null>(null);
-  const micMeterAudioContextRef = useRef<AudioContext | null>(null);
-  const micAnalyserRef = useRef<AnalyserNode | null>(null);
-  const micStreamRef = useRef<MediaStream | null>(null);
   const activeRecordingStreamRef = useRef<MediaStream | null>(null);
+  const recordingAudioContextRef = useRef<AudioContext | null>(null);
+
+  // Dedicated single instance for microphone meter monitoring
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const micAnalyserRef = useRef<AnalyserNode | null>(null);
+  const micMeterAudioContextRef = useRef<AudioContext | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const isMeterInitializedRef = useRef<boolean>(false);
+  const isMeterInitializedRef = useRef(false);
 
-  // Initialize or update microphone level monitor (strictly singleton AudioContext)
+  // Initialize microphone VU meter once on mount/settings change
   const initMicrophoneMeter = useCallback(async (settings: RecorderSettings) => {
+    if (!settings.captureMicrophone) {
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((t) => t.stop());
+        micStreamRef.current = null;
+      }
+      if (micMeterAudioContextRef.current) {
+        try {
+          micMeterAudioContextRef.current.close();
+        } catch (e) {}
+        micMeterAudioContextRef.current = null;
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      setMicLevel(0);
+      setIsClipping(false);
+      isMeterInitializedRef.current = false;
+      return;
+    }
+
     try {
-      if (!settings.captureMicrophone) {
-        if (micStreamRef.current) {
-          micStreamRef.current.getTracks().forEach((t) => t.stop());
-          micStreamRef.current = null;
-        }
-        if (micMeterAudioContextRef.current) {
-          try {
-            micMeterAudioContextRef.current.close();
-          } catch (e) {}
-          micMeterAudioContextRef.current = null;
-        }
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-          animationFrameRef.current = null;
-        }
-        isMeterInitializedRef.current = false;
-        setMicLevel(0);
-        setIsClipping(false);
-        return;
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((t) => t.stop());
+        micStreamRef.current = null;
       }
-
-      if (isMeterInitializedRef.current && micMeterAudioContextRef.current) {
-        return; // Already running stably
-      }
-
       if (micMeterAudioContextRef.current) {
         try {
           micMeterAudioContextRef.current.close();
@@ -127,7 +129,8 @@ export function useMediaRecording() {
         desktopStream = await navigator.mediaDevices.getUserMedia({
           audio: {
             mandatory: {
-              chromeMediaSource: 'desktop'
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: primaryScreen.id
             }
           } as any,
           video: {
@@ -193,8 +196,10 @@ export function useMediaRecording() {
     // Desktop system sound track
     const sysTracks = desktopStream.getAudioTracks();
     if (sysTracks.length > 0) {
-      const sysSource = audioCtx.createMediaStreamSource(new MediaStream([sysTracks[0]]));
-      sysSource.connect(compressor);
+      try {
+        const sysSource = audioCtx.createMediaStreamSource(new MediaStream([sysTracks[0]]));
+        sysSource.connect(compressor);
+      } catch (e) {}
     }
 
     // Microphone track
@@ -224,11 +229,11 @@ export function useMediaRecording() {
       }
     }
 
-    // Ensure at least one continuous silent audio track so FFmpeg audio encoder never faults
+    // Inaudible baseline carrier so FFmpeg AAC encoder never faults
     try {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0.00001, audioCtx.currentTime); // Inaudible baseline carrier
+      gain.gain.setValueAtTime(0.00001, audioCtx.currentTime);
       osc.connect(gain);
       gain.connect(compressor);
       osc.start();
@@ -256,9 +261,13 @@ export function useMediaRecording() {
       }
 
       // Start MediaRecorder piping
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
-        ? 'video/webm;codecs=vp9,opus'
-        : 'video/webm;codecs=vp8,opus';
+      let mimeType = 'video/webm;codecs=vp9,opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm;codecs=vp8,opus';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm';
+      }
 
       const recorder = new MediaRecorder(stream, {
         mimeType,
@@ -291,6 +300,8 @@ export function useMediaRecording() {
         activeRecordingStreamRef.current.getTracks().forEach((t) => t.stop());
         activeRecordingStreamRef.current = null;
       }
+      setIsRecording(false);
+      setIsPaused(false);
       throw err;
     }
   };
@@ -300,12 +311,12 @@ export function useMediaRecording() {
       if (mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.pause();
       }
+      await window.electronAPI.pauseRecording();
+      setIsPaused(true);
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      await window.electronAPI.pauseRecording();
-      setIsPaused(true);
     }
   };
 
@@ -314,17 +325,16 @@ export function useMediaRecording() {
       if (mediaRecorderRef.current.state === 'paused') {
         mediaRecorderRef.current.resume();
       }
+      await window.electronAPI.resumeRecording();
+      setIsPaused(false);
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
-      await window.electronAPI.resumeRecording();
-      setIsPaused(false);
     }
   };
 
   const togglePause = async () => {
-    if (!isRecording) return;
     if (isPaused) {
       await resumeRecording();
     } else {
@@ -332,9 +342,7 @@ export function useMediaRecording() {
     }
   };
 
-  const stopRecording = async (): Promise<RecordingItem | null> => {
-    if (!isRecording) return null;
-
+  const stopRecording = async () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -346,9 +354,8 @@ export function useMediaRecording() {
       } catch (e) {}
     }
 
-    // Stop and release desktop capture stream tracks immediately
     if (activeRecordingStreamRef.current) {
-      activeRecordingStreamRef.current.getTracks().forEach((t) => t.stop());
+      activeRecordingStreamRef.current.getTracks().forEach((track) => track.stop());
       activeRecordingStreamRef.current = null;
     }
 
@@ -361,9 +368,9 @@ export function useMediaRecording() {
 
     setIsRecording(false);
     setIsPaused(false);
+    setRecordingDuration(0);
 
-    const result = await window.electronAPI.stopRecording();
-    return result;
+    return await window.electronAPI.stopRecording();
   };
 
   useEffect(() => {
@@ -373,17 +380,17 @@ export function useMediaRecording() {
       if (micStreamRef.current) {
         micStreamRef.current.getTracks().forEach((t) => t.stop());
       }
+      if (micMeterAudioContextRef.current) {
+        try {
+          micMeterAudioContextRef.current.close();
+        } catch (e) {}
+      }
       if (activeRecordingStreamRef.current) {
         activeRecordingStreamRef.current.getTracks().forEach((t) => t.stop());
       }
       if (recordingAudioContextRef.current) {
         try {
           recordingAudioContextRef.current.close();
-        } catch (e) {}
-      }
-      if (micMeterAudioContextRef.current) {
-        try {
-          micMeterAudioContextRef.current.close();
         } catch (e) {}
       }
     };
@@ -402,4 +409,4 @@ export function useMediaRecording() {
     togglePause,
     stopRecording
   };
-}
+};

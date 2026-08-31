@@ -14,8 +14,7 @@ import {
   Maximize2,
   Minus,
   X,
-  GripHorizontal,
-  Sparkles
+  GripHorizontal
 } from 'lucide-react';
 import { useMediaRecording } from './hooks/useMediaRecording';
 import { RecorderSettings, RecordingStatus } from '../shared/types';
@@ -58,24 +57,49 @@ const ToolbarApp: React.FC = () => {
   isRecordingRef.current = isRecording;
   const togglePauseRef = useRef(togglePause);
   togglePauseRef.current = togglePause;
+  const startRecordingRef = useRef(startRecording);
+  startRecordingRef.current = startRecording;
+  const stopRecordingRef = useRef(stopRecording);
+  stopRecordingRef.current = stopRecording;
   const uiStatusRef = useRef(uiStatus);
   uiStatusRef.current = uiStatus;
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
   const handleTogglePause = useCallback(async () => {
-    if (!isRecordingRef.current) return;
     await togglePauseRef.current();
   }, []);
 
   const handleStartCapture = useCallback(async () => {
     try {
-      await startRecording(settingsRef.current);
+      setUiStatus('recording');
+      await startRecordingRef.current(settingsRef.current);
     } catch (err) {
       console.error('Failed to start capture:', err);
       setUiStatus('idle');
     }
-  }, [startRecording]);
+  }, []);
+
+  const handleStopRecord = useCallback(async () => {
+    setIsStopping(true);
+    try {
+      await stopRecordingRef.current();
+    } catch (err) {
+      console.error('Failed to stop recording:', err);
+      setIsStopping(false);
+      setUiStatus('idle');
+    }
+  }, []);
+
+  const handleRecClick = () => {
+    const count = settingsRef.current.countdownSeconds ?? 3;
+    if (count <= 0) {
+      handleStartCapture();
+    } else {
+      setUiStatus('countdown');
+      window.electronAPI.triggerCountdown(count);
+    }
+  };
 
   useEffect(() => {
     window.electronAPI.getSettings().then((s) => {
@@ -101,12 +125,10 @@ const ToolbarApp: React.FC = () => {
       handleStartCapture();
     });
 
-    // Shortcut: Ctrl+Shift+R (Record / Stop / Confirm GO)
+    // Shortcut: Ctrl+Shift+R (Record / Stop / Confirm)
     const handleToggleRecordShortcut = () => {
-      if (isRecordingRef.current) {
+      if (isRecordingRef.current || uiStatusRef.current === 'recording') {
         handleStopRecord();
-      } else if (uiStatusRef.current === 'ready') {
-        handleStartCapture();
       } else if (uiStatusRef.current === 'idle') {
         handleRecClick();
       }
@@ -147,23 +169,6 @@ const ToolbarApp: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleRecClick = () => {
-    const count = settingsRef.current.countdownSeconds ?? 3;
-    setUiStatus(count > 0 ? 'countdown' : 'ready');
-    window.electronAPI.triggerCountdown(count);
-  };
-
-  const handleStopRecord = async () => {
-    setIsStopping(true);
-    try {
-      await stopRecording();
-    } catch (err) {
-      console.error('Failed to stop recording:', err);
-      setIsStopping(false);
-      setUiStatus('idle');
-    }
-  };
-
   const toggleMic = async () => {
     const updated = { ...settings, captureMicrophone: !settings.captureMicrophone };
     setSettings(updated);
@@ -190,13 +195,13 @@ const ToolbarApp: React.FC = () => {
     window.electronAPI.setFrameFullScreen();
   };
 
+  const isCurrentlyRecording = isRecording || uiStatus === 'recording' || uiStatus === 'paused';
   const isCountdown = uiStatus === 'countdown';
-  const isReady = uiStatus === 'ready';
 
   return (
     <div className="w-screen h-screen flex items-center justify-center p-2 bg-transparent select-none overflow-hidden font-sans">
       <div className="toolbar-container">
-        {/* GROUP 1: Drag + Status + Record/Stop */}
+        {/* GROUP 1: Drag + Status + Record/Stop Controls */}
         <div className="toolbar-group">
           {/* Horizontal Drag Grip */}
           <div
@@ -206,12 +211,12 @@ const ToolbarApp: React.FC = () => {
             <GripHorizontal className="w-4 h-4" />
           </div>
 
-          {/* Status Badge */}
+          {/* Status Pill Badge */}
           <div className="toolbar-pill-status app-no-drag">
             {isStopping ? (
               <span className="text-amber-400 animate-pulse font-medium">Processing...</span>
-            ) : isRecording ? (
-              isPaused ? (
+            ) : isCurrentlyRecording ? (
+              isPaused || uiStatus === 'paused' ? (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-amber-400 shadow-sm shadow-amber-400/80 shrink-0" />
                   <span className="text-amber-400 font-semibold text-xs uppercase tracking-wider">Paused</span>
@@ -232,11 +237,6 @@ const ToolbarApp: React.FC = () => {
                 <div className="w-2 h-2 rounded-full bg-indigo-400 animate-ping shrink-0" />
                 <span className="font-medium text-indigo-300">Countdown...</span>
               </div>
-            ) : isReady ? (
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                <span className="font-bold text-emerald-400 uppercase tracking-wide text-[11px]">GO / Ready</span>
-              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse shrink-0" />
@@ -245,14 +245,14 @@ const ToolbarApp: React.FC = () => {
             )}
           </div>
 
-          {/* Primary REC / Controls Button Group */}
+          {/* Primary Action Button: REC vs (Pause & Done) */}
           <div className="app-no-drag shrink-0">
-            {!isRecording ? (
+            {!isCurrentlyRecording ? (
               <button
                 onClick={handleRecClick}
                 disabled={isCountdown}
                 className={`toolbar-btn-rec ${isCountdown ? 'opacity-50 cursor-not-allowed' : ''}`}
-                title="Start 3-2-1 Countdown (Ctrl+Shift+R)"
+                title="Start Recording (Ctrl+Shift+R)"
               >
                 <div className="w-2 h-2 rounded-full bg-white animate-ping shrink-0" />
                 <span>REC</span>
@@ -263,21 +263,21 @@ const ToolbarApp: React.FC = () => {
                 <button
                   onClick={handleTogglePause}
                   className={`toolbar-btn-text transition-colors duration-150 ${
-                    isPaused
+                    isPaused || uiStatus === 'paused'
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
                       : 'hover:bg-white/10 text-slate-200'
                   }`}
-                  title={isPaused ? 'Resume Recording (Ctrl+Shift+P)' : 'Pause Recording (Ctrl+Shift+P)'}
+                  title={isPaused || uiStatus === 'paused' ? 'Resume Recording (Ctrl+Shift+P)' : 'Pause Recording (Ctrl+Shift+P)'}
                 >
-                  {isPaused ? (
+                  {isPaused || uiStatus === 'paused' ? (
                     <Play className="w-3.5 h-3.5 fill-current text-amber-400 shrink-0" />
                   ) : (
                     <Pause className="w-3.5 h-3.5 shrink-0 text-slate-200" />
                   )}
-                  <span>{isPaused ? 'Resume' : 'Pause'}</span>
+                  <span>{isPaused || uiStatus === 'paused' ? 'Resume' : 'Pause'}</span>
                 </button>
 
-                {/* Stop & Save Button */}
+                {/* Stop & Save (Done) Button */}
                 <button
                   onClick={handleStopRecord}
                   disabled={isStopping}
