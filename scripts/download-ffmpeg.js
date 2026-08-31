@@ -20,9 +20,9 @@ function ensureFFmpeg() {
   const zipPath = path.join(__dirname, '../ffmpeg.zip');
   const tempExtract = path.join(__dirname, '../ffmpeg_temp');
 
-  const url = 'https://github.com/GyanD/codexffmpeg/releases/download/2025-02-27-git-827c191a61/ffmpeg-2025-02-27-git-827c191a61-essentials_build.zip';
-  
-  execSync(`powershell -Command "Invoke-WebRequest -Uri '${url}' -OutFile '${zipPath}'"`, { stdio: 'inherit' });
+  const url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip';
+
+  execSync(`curl.exe -L -o "${zipPath}" "${url}"`, { stdio: 'inherit' });
   execSync(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${tempExtract}' -Force"`, { stdio: 'inherit' });
 
   // Locate ffmpeg.exe & ffprobe.exe in extracted folder
