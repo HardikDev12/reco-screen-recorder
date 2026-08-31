@@ -46,7 +46,6 @@
 
 - **OS**: Windows 10 / 11 x64
 - **Node.js**: v20+ / v22+
-- **FFmpeg**: Installed and available on system PATH
 
 ### Installation
 
@@ -75,12 +74,36 @@ npm run build:electron
 # Package standalone unpacked application (dist/win-unpacked/Reco.exe)
 npm run pack
 
-# Create NSIS per-user installer
+# Create NSIS single-file installer (dist/RECO-Setup.exe)
 npm run dist
 
-# Create standalone single-file portable executable
+# Create standalone single-file portable executable (dist/RECO-Portable.exe)
 npm run dist:portable
 ```
+
+For complete packaging and build orchestration details, refer to [BUILD.md](BUILD.md).
+
+---
+
+## 📄 Licensing & Legal Information
+
+RECO is open-source software released under the **[MIT License](LICENSE)**.
+
+Copyright (c) 2026 **Hardik Prajapati**.
+
+Third-party dependencies, libraries, codecs, and bundled binaries are licensed under their respective terms. For complete details, see:
+
+* 📜 **[LICENSE](LICENSE)**: Full MIT License text.
+* 📦 **[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)**: Third-party attributions and upstream licenses.
+* ⚖️ **[COPYRIGHT.md](COPYRIGHT.md)**: Copyright and ownership scope.
+* 🔒 **[PRIVACY.md](PRIVACY.md)**: Privacy policy & local-only offline guarantees.
+* 📋 **[TERMS.md](TERMS.md)**: Terms of use and user responsibilities.
+* ⚠️ **[DISCLAIMER.md](DISCLAIMER.md)**: General software and recording disclaimer.
+* 🎙️ **[RECORDING-CONSENT.md](RECORDING-CONSENT.md)**: Multi-party recording consent information.
+* 🛡️ **[SECURITY.md](SECURITY.md)**: Vulnerability disclosure guidelines.
+* 🏷️ **[TRADEMARKS.md](TRADEMARKS.md)**: Brand and logo usage guidelines.
+* 🤝 **[CONTRIBUTING.md](CONTRIBUTING.md)**: Developer contribution guidelines.
+* 📜 **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)**: Community standards.
 
 ---
 
@@ -88,9 +111,3 @@ npm run dist:portable
 
 **Hardik Prajapati**  
 - GitHub: [@HardikDev12](https://github.com/HardikDev12)
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -11,14 +11,20 @@ import {
   Calendar,
   Sliders,
   ShieldCheck,
-  Cpu
+  Cpu,
+  Info,
+  Scale,
+  FileText,
+  Lock,
+  ExternalLink
 } from 'lucide-react';
 import { RecorderSettings, RecordingItem, SystemHardwareInfo, EncoderChoice } from '../shared/types';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'library' | 'settings'>('library');
+  const [activeTab, setActiveTab] = useState<'library' | 'settings' | 'about'>('library');
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
   const [hwInfo, setHwInfo] = useState<SystemHardwareInfo | null>(null);
+  const [selectedLegalDoc, setSelectedLegalDoc] = useState<'license' | 'thirdparty' | 'privacy' | 'terms' | 'disclaimer' | null>(null);
   const [settings, setSettings] = useState<RecorderSettings>({
     outputPath: '',
     framerate: 60,
@@ -101,7 +107,7 @@ export const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen w-screen bg-[#0b0f17] text-slate-100 select-none overflow-hidden font-sans">
       {/* Top Header */}
-      <header className="h-16 px-8 border-b border-white/5 flex items-center justify-between bg-slate-950/60 backdrop-blur-md app-draggable">
+      <header className="h-16 px-8 border-b border-white/5 flex items-center justify-between bg-slate-950/60 backdrop-blur-md app-draggable shrink-0">
         <div className="flex items-center gap-3.5 app-no-drag">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-rose-500 flex items-center justify-center shadow-lg shadow-indigo-600/30">
             <Video className="w-5 h-5 text-white" />
@@ -123,7 +129,7 @@ export const App: React.FC = () => {
         <div className="flex bg-slate-900/80 p-1 rounded-2xl border border-white/5 app-no-drag">
           <button
             onClick={() => setActiveTab('library')}
-            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold transition ${
               activeTab === 'library'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
@@ -134,7 +140,7 @@ export const App: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold transition ${
               activeTab === 'settings'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
@@ -143,12 +149,23 @@ export const App: React.FC = () => {
             <Settings className="w-4 h-4" />
             Preferences
           </button>
+          <button
+            onClick={() => setActiveTab('about')}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold transition ${
+              activeTab === 'about'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Info className="w-4 h-4" />
+            About & Legal
+          </button>
         </div>
       </header>
 
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto">
-        {activeTab === 'library' ? (
+        {activeTab === 'library' && (
           <div className="max-w-4xl mx-auto space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-white/5">
               <div>
@@ -232,7 +249,9 @@ export const App: React.FC = () => {
               </div>
             )}
           </div>
-        ) : (
+        )}
+
+        {activeTab === 'settings' && (
           <div className="max-w-3xl mx-auto space-y-6">
             <div className="pb-3 border-b border-white/5">
               <h1 className="text-xl font-bold text-white">Recording Preferences</h1>
@@ -310,6 +329,117 @@ export const App: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'about' && (
+          <div className="max-w-3xl mx-auto space-y-6">
+            <div className="glass-panel p-6 rounded-3xl border border-white/10 text-center relative overflow-hidden">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-rose-500 flex items-center justify-center shadow-xl shadow-indigo-600/30 mb-4">
+                <Video className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-2xl font-black text-white tracking-tight">RECO</h1>
+              <p className="text-xs text-slate-400 font-medium mt-1">Modern Offline Desktop Screen Recorder</p>
+              <p className="text-xs text-slate-500 mt-2 font-mono">Version 1.0.0 • 64-bit Windows</p>
+              <p className="text-xs text-slate-400 mt-3">
+                Copyright © 2026 <strong className="text-slate-200">Hardik Prajapati</strong>. Licensed under the <strong className="text-indigo-400">MIT License</strong>.
+              </p>
+            </div>
+
+            {/* Offline Legal Nav Buttons */}
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => setSelectedLegalDoc(selectedLegalDoc === 'license' ? null : 'license')}
+                className={`p-4 rounded-2xl border text-left transition ${
+                  selectedLegalDoc === 'license'
+                    ? 'bg-indigo-600/20 border-indigo-500 text-white'
+                    : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white hover:border-white/20'
+                }`}
+              >
+                <Scale className="w-5 h-5 text-indigo-400 mb-2" />
+                <h3 className="text-xs font-bold">MIT License</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">Software license terms</p>
+              </button>
+
+              <button
+                onClick={() => setSelectedLegalDoc(selectedLegalDoc === 'thirdparty' ? null : 'thirdparty')}
+                className={`p-4 rounded-2xl border text-left transition ${
+                  selectedLegalDoc === 'thirdparty'
+                    ? 'bg-indigo-600/20 border-indigo-500 text-white'
+                    : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white hover:border-white/20'
+                }`}
+              >
+                <FileText className="w-5 h-5 text-indigo-400 mb-2" />
+                <h3 className="text-xs font-bold">Third-Party Notices</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">Open source attributions</p>
+              </button>
+
+              <button
+                onClick={() => setSelectedLegalDoc(selectedLegalDoc === 'privacy' ? null : 'privacy')}
+                className={`p-4 rounded-2xl border text-left transition ${
+                  selectedLegalDoc === 'privacy'
+                    ? 'bg-indigo-600/20 border-indigo-500 text-white'
+                    : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white hover:border-white/20'
+                }`}
+              >
+                <Lock className="w-5 h-5 text-emerald-400 mb-2" />
+                <h3 className="text-xs font-bold">Privacy Guarantee</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">100% offline & zero telemetry</p>
+              </button>
+            </div>
+
+            {/* In-App Offline Document Viewer */}
+            {selectedLegalDoc && (
+              <div className="glass-panel p-6 rounded-2xl border border-white/15 max-h-96 overflow-y-auto text-xs text-slate-300 font-sans leading-relaxed space-y-3">
+                {selectedLegalDoc === 'license' && (
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-2">MIT License</h3>
+                    <p className="font-mono text-[11px] bg-black/40 p-4 rounded-xl text-slate-300 border border-white/5">
+                      Copyright (c) 2026 Hardik Prajapati<br /><br />
+                      Permission is hereby granted, free of charge, to any person obtaining a copy
+                      of this software and associated documentation files (the "Software"), to deal
+                      in the Software without restriction, including without limitation the rights
+                      to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                      copies of the Software, and to permit persons to whom the Software is
+                      furnished to do so, subject to the following conditions:<br /><br />
+                      The above copyright notice and this permission notice shall be included in all
+                      copies or substantial portions of the Software.<br /><br />
+                      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                      IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                      FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                      AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                      LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                      OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                      SOFTWARE.
+                    </p>
+                  </div>
+                )}
+
+                {selectedLegalDoc === 'thirdparty' && (
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-2">Third-Party Software Attribution</h3>
+                    <ul className="space-y-2 text-slate-300">
+                      <li>• <strong>Electron & Chromium</strong> — OpenJS Foundation / Google LLC (MIT / BSD)</li>
+                      <li>• <strong>React 19 & React DOM</strong> — Meta Platforms, Inc. (MIT)</li>
+                      <li>• <strong>FFmpeg & FFprobe</strong> — FFmpeg developers / Fabrice Bellard (GPL v3 / LGPL v2.1+)</li>
+                      <li>• <strong>Lucide Icons</strong> — Lucide Contributors (ISC)</li>
+                      <li>• <strong>Tailwind CSS</strong> — Tailwind Labs, Inc. (MIT)</li>
+                      <li>• <strong>Plus Jakarta Sans</strong> — Tokotype (SIL Open Font License 1.1)</li>
+                      <li>• <strong>Vite</strong> — Evan You & Vite Contributors (MIT)</li>
+                    </ul>
+                  </div>
+                )}
+
+                {selectedLegalDoc === 'privacy' && (
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-2">Privacy & Offline Data Guarantee</h3>
+                    <p>• <strong>Zero Cloud Uploads</strong>: All screen recordings and audio are processed exclusively on your local computer and saved to your personal storage directory.</p>
+                    <p>• <strong>Zero Telemetry</strong>: RECO contains no analytics probes, user tracking, or advertising SDKs.</p>
+                    <p>• <strong>Offline Operational Mode</strong>: The application requires zero internet connectivity to function.</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </main>
