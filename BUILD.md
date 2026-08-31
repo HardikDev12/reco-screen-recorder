@@ -17,8 +17,8 @@ This document covers everything required to develop, build, and package **Reco**
 
 ```bash
 # Clone the repository
-git clone https://github.com/HardikDev12/reco.git
-cd reco
+git clone https://github.com/HardikDev12/reco-screen-recorder.git
+cd reco-screen-recorder
 
 # Install Node dependencies
 npm install

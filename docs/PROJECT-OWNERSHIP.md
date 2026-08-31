@@ -8,7 +8,7 @@ This document establishes the historical record and ownership provenance for the
 * **Project Name**: RECO
 * **Author / Creator**: Hardik Prajapati
 * **GitHub Profile**: [@HardikDev12](https://github.com/HardikDev12)
-* **Primary Repository**: [https://github.com/HardikDev12/reco](https://github.com/HardikDev12/reco)
+* **Primary Repository**: [https://github.com/HardikDev12/reco-screen-recorder](https://github.com/HardikDev12/reco-screen-recorder)
 * **Initial Release Year**: 2026
 * **License**: MIT License
 

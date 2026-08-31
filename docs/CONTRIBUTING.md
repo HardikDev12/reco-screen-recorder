@@ -13,8 +13,8 @@ All contributors are expected to adhere to our [Code of Conduct](CODE_OF_CONDUCT
 
 1. **Fork and Clone**:
    ```bash
-   git clone https://github.com/HardikDev12/reco.git
-   cd reco
+   git clone https://github.com/HardikDev12/reco-screen-recorder.git
+   cd reco-screen-recorder
    npm install
    ```
 

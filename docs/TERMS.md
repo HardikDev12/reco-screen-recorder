@@ -39,4 +39,4 @@ TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE AUTHORS
 ---
 
 ## 6. Governing Law & Contact
-These terms shall be governed by and construed in accordance with applicable laws. For questions regarding these Terms, open an inquiry on the official GitHub repository: [https://github.com/HardikDev12/reco](https://github.com/HardikDev12/reco).
+These terms shall be governed by and construed in accordance with applicable laws. For questions regarding these Terms, open an inquiry on the official GitHub repository: [https://github.com/HardikDev12/reco-screen-recorder](https://github.com/HardikDev12/reco-screen-recorder).

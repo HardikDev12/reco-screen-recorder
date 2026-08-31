@@ -50,4 +50,4 @@ If future versions of RECO introduce optional network features (such as opt-in u
 ## 7. Contact
 For privacy inquiries or technical questions:
 * **Maintainer**: Hardik Prajapati
-* **GitHub Issues**: [https://github.com/HardikDev12/reco/issues](https://github.com/HardikDev12/reco/issues)
+* **GitHub Issues**: [https://github.com/HardikDev12/reco-screen-recorder/issues](https://github.com/HardikDev12/reco-screen-recorder/issues)

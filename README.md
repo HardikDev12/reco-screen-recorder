@@ -5,8 +5,8 @@
 <h1 align="center">Reco — Modern Desktop Screen Recorder</h1>
 
 <p align="center">
-  <a href="https://github.com/HardikDev12/reco/releases"><img src="https://img.shields.io/badge/version-1.0.0-blue.svg?style=flat-square" alt="Version"/></a>
-  <a href="https://github.com/HardikDev12/reco"><img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20x64-0078D6.svg?style=flat-square&logo=windows" alt="Platform"/></a>
+  <a href="https://github.com/HardikDev12/reco-screen-recorder/releases"><img src="https://img.shields.io/badge/version-1.0.0-blue.svg?style=flat-square" alt="Version"/></a>
+  <a href="https://github.com/HardikDev12/reco-screen-recorder"><img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20x64-0078D6.svg?style=flat-square&logo=windows" alt="Platform"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"/></a>
   <a href="docs/PRIVACY.md"><img src="https://img.shields.io/badge/privacy-100%25%20Offline%20%7C%20Zero%20Telemetry-success.svg?style=flat-square" alt="Privacy"/></a>
   <a href="https://github.com/HardikDev12"><img src="https://img.shields.io/badge/author-Hardik%20Prajapati-orange.svg?style=flat-square" alt="Author"/></a>
@@ -31,7 +31,7 @@ Reco is distributed as a self-contained, single-file Windows executable with bun
 | **Portable Version** | `RECO-Portable.exe` | Single standalone executable that runs directly without installation. |
 
 ### Installing via Setup Wizard
-1. Download **`RECO-Setup.exe`** from the [Latest Releases](https://github.com/HardikDev12/reco/releases).
+1. Download **`RECO-Setup.exe`** from the [Latest Releases](https://github.com/HardikDev12/reco-screen-recorder/releases).
 2. Double-click **`RECO-Setup.exe`** to launch the installer.
 3. Select your preferred installation directory (defaults to your user profile directory).
 4. Click **Install**. Reco will automatically extract the application, register Windows shortcuts, and launch the recorder.
@@ -94,7 +94,7 @@ Reco provides a clean Windows uninstaller accessible via **Windows Settings > Ap
 
 ```bash
 # Clone the repository
-git clone https://github.com/HardikDev12/reco.git
+git clone https://github.com/HardikDev12/reco-screen-recorder.git
 cd reco
 
 # Install dependencies
@@ -151,4 +151,4 @@ For full compliance policies and audits, refer to the [`docs/`](docs/) directory
 
 **Hardik Prajapati**
 * GitHub: [@HardikDev12](https://github.com/HardikDev12)
-* Project Repository: [https://github.com/HardikDev12/reco](https://github.com/HardikDev12/reco)
+* Project Repository: [https://github.com/HardikDev12/reco-screen-recorder](https://github.com/HardikDev12/reco-screen-recorder)

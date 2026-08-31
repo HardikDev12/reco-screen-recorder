@@ -71,7 +71,7 @@ git push origin v1.0.1
 
 ### Step 3: Automated Publishing
 GitHub Actions will automatically pick up the `v1.0.1` tag, build the Windows binaries, and publish the release with all checksums to:
-`https://github.com/HardikDev12/reco/releases`
+`https://github.com/HardikDev12/reco-screen-recorder/releases`
 
 ---
 

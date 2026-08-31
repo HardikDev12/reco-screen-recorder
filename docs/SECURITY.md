@@ -22,7 +22,7 @@ Only the latest release of RECO receives security patches:
 **Please do NOT disclose security vulnerabilities publicly in public GitHub issues.**
 
 To report a vulnerability responsibly:
-1. Navigate to the GitHub repository Security Advisory page: [https://github.com/HardikDev12/reco/security/advisories/new](https://github.com/HardikDev12/reco/security/advisories/new)
+1. Navigate to the GitHub repository Security Advisory page: [https://github.com/HardikDev12/reco-screen-recorder/security/advisories/new](https://github.com/HardikDev12/reco-screen-recorder/security/advisories/new)
 2. Provide a detailed summary including:
    - Type of vulnerability (e.g., privilege escalation, path traversal, IPC injection).
    - Step-by-step reproduction instructions or Proof of Concept (PoC).

@@ -1,5 +1,5 @@
 {
-  "name": "reco",
+  "name": "reco-screen-recorder",
   "version": "1.0.0",
   "description": "Simple, high-quality Windows screen recorder inspired by ShowMore",
   "main": "dist-electron/main/index.js",
