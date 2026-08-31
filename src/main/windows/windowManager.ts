@@ -24,6 +24,15 @@ export class WindowManager {
     this.createFloatingToolbarWindow();
   }
 
+  private hardenWindowSecurity(win: BrowserWindow): void {
+    win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    win.webContents.on('will-navigate', (event, url) => {
+      if (!url.startsWith('file:') && !url.startsWith('http://localhost:')) {
+        event.preventDefault();
+      }
+    });
+  }
+
   // 1. Independent Recording Frame Window
   public createRecordingFrameWindow(): BrowserWindow {
     if (this.frameWindow) {
@@ -65,6 +74,8 @@ export class WindowManager {
         backgroundThrottling: false
       }
     });
+
+    this.hardenWindowSecurity(this.frameWindow);
 
     try {
       this.frameWindow.setContentProtection(true);
@@ -133,6 +144,8 @@ export class WindowManager {
       }
     });
 
+    this.hardenWindowSecurity(this.toolbarWindow);
+
     try {
       this.toolbarWindow.setContentProtection(true);
     } catch (err) {}
@@ -194,6 +207,8 @@ export class WindowManager {
       }
     });
 
+    this.hardenWindowSecurity(this.dashboardWindow);
+
     if (process.env.VITE_DEV_SERVER_URL) {
       this.dashboardWindow.loadURL(`${process.env.VITE_DEV_SERVER_URL}/index.html`);
     } else {
@@ -238,6 +253,8 @@ export class WindowManager {
         contextIsolation: true
       }
     });
+
+    this.hardenWindowSecurity(this.webcamWindow);
 
     try {
       this.webcamWindow.setContentProtection(true);
