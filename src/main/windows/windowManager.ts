@@ -106,8 +106,9 @@ export class WindowManager {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
 
-    const toolbarW = 640;
-    const toolbarH = 58;
+    // Content-derived dimensions
+    const toolbarW = 790;
+    const toolbarH = 64;
 
     this.toolbarWindow = new BrowserWindow({
       width: toolbarW,

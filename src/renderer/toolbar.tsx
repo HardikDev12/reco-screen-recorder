@@ -125,69 +125,70 @@ const ToolbarApp: React.FC = () => {
   };
 
   return (
-    <div className="w-screen h-screen flex items-center justify-center p-1 bg-transparent select-none overflow-hidden font-sans">
-      {/* Compact Floating Control Pill */}
-      <div className="w-full h-[48px] bg-[#0c101a] text-slate-100 px-3 rounded-2xl shadow-2xl border border-white/20 flex items-center justify-between gap-2.5">
-        {/* Left: Drag Grip + Status + REC Button (Tight Cohort) */}
+    <div className="w-screen h-screen flex items-center justify-center p-2 bg-transparent select-none overflow-hidden font-sans">
+      {/* Normalized Floating Toolbar Container */}
+      <div className="h-[52px] px-3 py-2 bg-[#090d16] text-slate-100 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-4 mx-auto">
+        {/* GROUP 1: Drag + Status + Record/Stop (8px internal gap) */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Drag Handle (36x36px with 16px icon) */}
           <div
-            className="app-draggable cursor-move p-1 text-slate-400 hover:text-white transition rounded-md hover:bg-white/10"
+            className="app-draggable cursor-move w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white transition rounded-[10px] hover:bg-white/10"
             title="Drag Toolbar Anywhere"
           >
-            <GripHorizontal className="w-3.5 h-3.5" />
+            <GripHorizontal className="w-4 h-4" />
           </div>
 
-          {/* Status Badge */}
-          <div className="flex items-center gap-1.5 h-[32px] px-2.5 bg-[#161c2c] rounded-lg border border-white/10 shrink-0 app-no-drag">
+          {/* Status Badge (36px height, 12px px, 8px gap) */}
+          <div className="h-9 px-3 bg-[#131927] rounded-[10px] border border-white/10 flex items-center gap-2 shrink-0 app-no-drag">
             {isStopping ? (
-              <span className="text-[11px] font-bold text-amber-400 animate-pulse">Saving...</span>
+              <span className="text-xs font-bold text-amber-400 animate-pulse">Saving...</span>
             ) : isRecording ? (
-              <div className="flex items-center gap-1.5">
+              <>
                 <div className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-rose-500 animate-ping'}`} />
                 <span className="text-xs font-mono font-extrabold tracking-wider text-white">
                   {formatTime(recordingDuration)}
                 </span>
-              </div>
+              </>
             ) : (
-              <div className="flex items-center gap-1.5">
+              <>
                 <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse" />
-                <span className="text-[11px] font-bold text-slate-200">Ready</span>
-              </div>
+                <span className="text-xs font-bold text-slate-200">Ready</span>
+              </>
             )}
           </div>
 
-          {/* REC / Pause / Done Button right next to Status */}
+          {/* Primary Record / Pause / Done Action (36px height, 16px px, 8px gap) */}
           <div className="app-no-drag shrink-0">
             {!isRecording ? (
               <button
                 onClick={handleStartRecord}
-                className="h-[32px] px-4 rounded-lg bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-[11px] font-extrabold shadow-md shadow-rose-600/40 hover:shadow-rose-600/60 transition transform hover:scale-[1.03] active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                className="h-9 px-4 rounded-[10px] bg-gradient-to-r from-rose-600 via-rose-500 to-rose-600 hover:from-rose-500 hover:to-rose-400 text-white text-xs font-extrabold shadow-md shadow-rose-600/40 hover:shadow-rose-600/60 transition transform hover:scale-[1.02] active:scale-95 flex items-center gap-2 cursor-pointer shrink-0 animate-record-pulse"
               >
                 <div className="w-2 h-2 rounded-full bg-white animate-ping" />
                 <span>REC</span>
               </button>
             ) : (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={handleTogglePause}
-                  className={`h-[32px] px-2.5 rounded-lg border transition cursor-pointer flex items-center gap-1 text-[11px] font-bold ${
+                  className={`h-9 px-3 rounded-[10px] border transition cursor-pointer flex items-center gap-2 text-xs font-bold ${
                     isPaused
                       ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
-                      : 'bg-[#161c2c] border-white/15 text-slate-200 hover:bg-slate-800'
+                      : 'bg-[#131927] border-white/15 text-slate-200 hover:bg-slate-800'
                   }`}
-                  title={isPaused ? 'Resume' : 'Pause'}
+                  title={isPaused ? 'Resume Recording' : 'Pause Recording'}
                 >
-                  {isPaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5" />}
+                  {isPaused ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4" />}
                   <span>{isPaused ? 'Resume' : 'Pause'}</span>
                 </button>
 
                 <button
                   onClick={handleStopRecord}
                   disabled={isStopping}
-                  className="h-[32px] px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-extrabold transition shadow-md shadow-rose-600/30 active:scale-95 cursor-pointer flex items-center gap-1"
+                  className="h-9 px-3.5 rounded-[10px] bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold transition shadow-md shadow-rose-600/30 active:scale-95 cursor-pointer flex items-center gap-2"
                   title="Stop & Save Recording"
                 >
-                  <Square className="w-3 h-3 fill-current" />
+                  <Square className="w-3.5 h-3.5 fill-current" />
                   <span>Done</span>
                 </button>
               </div>
@@ -195,12 +196,13 @@ const ToolbarApp: React.FC = () => {
           </div>
         </div>
 
-        <div className="w-[1px] h-4 bg-white/15 shrink-0" />
+        {/* Group Divider (1px width, 20px height) */}
+        <div className="w-[1px] h-5 bg-white/15 shrink-0" />
 
-        {/* Center: Audio Controls */}
-        <div className="flex items-center gap-1.5 app-no-drag shrink-0">
-          {/* Mic + Live Meter */}
-          <div className="flex items-center gap-1.5 bg-[#161c2c] h-[32px] px-2.5 rounded-lg border border-white/10">
+        {/* GROUP 2: Audio & Media Group (8px internal gap) */}
+        <div className="flex items-center gap-2 app-no-drag shrink-0">
+          {/* Microphone + Live Level Meter (36px height, 10px px, 8px gap) */}
+          <div className="h-9 px-2.5 bg-[#131927] rounded-[10px] border border-white/10 flex items-center gap-2">
             <button
               onClick={toggleMic}
               className={`transition cursor-pointer ${
@@ -208,11 +210,11 @@ const ToolbarApp: React.FC = () => {
               }`}
               title={settings.captureMicrophone ? 'Microphone On' : 'Microphone Muted'}
             >
-              {settings.captureMicrophone ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5 text-slate-500" />}
+              {settings.captureMicrophone ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4 text-slate-500" />}
             </button>
 
             {settings.captureMicrophone && (
-              <div className="w-8 h-1.5 bg-slate-800 rounded-full overflow-hidden flex items-center p-0.5">
+              <div className="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden flex items-center p-0.5 border border-white/5">
                 <div
                   className={`h-full rounded-full transition-all duration-75 ${
                     isClipping ? 'bg-rose-500' : micLevel > 70 ? 'bg-amber-400' : 'bg-emerald-400'
@@ -223,80 +225,86 @@ const ToolbarApp: React.FC = () => {
             )}
           </div>
 
-          {/* System Sound */}
+          {/* System Audio Toggle (36x36px) */}
           <button
             onClick={toggleSystemAudio}
-            className={`h-[32px] w-[32px] rounded-lg border transition cursor-pointer flex items-center justify-center ${
+            className={`w-9 h-9 rounded-[10px] border transition cursor-pointer flex items-center justify-center ${
               settings.captureSystemAudio
-                ? 'bg-[#161c2c] border-indigo-500/40 text-indigo-400'
-                : 'bg-[#161c2c]/50 border-white/10 text-slate-500 hover:text-slate-300'
+                ? 'bg-[#131927] border-indigo-500/40 text-indigo-400'
+                : 'bg-[#131927]/60 border-white/10 text-slate-500 hover:text-slate-300'
             }`}
             title={settings.captureSystemAudio ? 'System Sound On' : 'System Sound Muted'}
           >
-            {settings.captureSystemAudio ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5 text-slate-500" />}
+            {settings.captureSystemAudio ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
           </button>
 
-          {/* Webcam */}
+          {/* Webcam Toggle (36x36px) */}
           <button
             onClick={toggleWebcam}
-            className={`h-[32px] w-[32px] rounded-lg border transition cursor-pointer flex items-center justify-center ${
+            className={`w-9 h-9 rounded-[10px] border transition cursor-pointer flex items-center justify-center ${
               settings.showWebcam
                 ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm shadow-indigo-600/30'
-                : 'bg-[#161c2c]/50 border-white/10 text-slate-400 hover:text-slate-200'
+                : 'bg-[#131927]/60 border-white/10 text-slate-400 hover:text-slate-200'
             }`}
-            title="Toggle Webcam PIP"
+            title="Toggle Webcam Picture-in-Picture"
           >
-            <Camera className="w-3.5 h-3.5" />
+            <Camera className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="w-[1px] h-4 bg-white/15 shrink-0" />
+        {/* Group Divider */}
+        <div className="w-[1px] h-5 bg-white/15 shrink-0" />
 
-        {/* Right: Full Screen, Library, Settings & Window Controls */}
-        <div className="flex items-center gap-1.5 app-no-drag shrink-0">
-          {/* Full Screen */}
+        {/* GROUP 3: Tools & Secondary Group (8px internal gap) */}
+        <div className="flex items-center gap-2 app-no-drag shrink-0">
+          {/* Full Screen Button (36px height, 12px px, 8px gap) */}
           <button
             onClick={handleSetFullScreen}
-            className="h-[32px] flex items-center gap-1.5 px-2.5 rounded-lg bg-[#161c2c] hover:bg-slate-800 text-slate-200 hover:text-white border border-white/10 transition text-[11px] font-semibold cursor-pointer"
+            className="h-9 px-3 rounded-[10px] bg-[#131927] hover:bg-slate-800 text-slate-200 hover:text-white border border-white/10 transition text-xs font-semibold flex items-center gap-2 cursor-pointer"
             title="Expand Recording Frame to Full Screen"
           >
-            <Maximize2 className="w-3 h-3 text-indigo-400" />
+            <Maximize2 className="w-4 h-4 text-indigo-400" />
             <span>Full Screen</span>
           </button>
 
-          {/* Library */}
+          {/* Library Button (36x36px) */}
           <button
             onClick={() => window.electronAPI.openDashboard('library')}
-            className="h-[32px] w-[32px] flex items-center justify-center rounded-lg bg-[#161c2c]/60 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 transition cursor-pointer"
+            className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-[#131927]/70 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 transition cursor-pointer"
             title="Recordings History"
           >
-            <Film className="w-3.5 h-3.5" />
+            <Film className="w-4 h-4" />
           </button>
 
-          {/* Settings */}
+          {/* Settings Button (36x36px) */}
           <button
             onClick={() => window.electronAPI.openDashboard('settings')}
-            className="h-[32px] w-[32px] flex items-center justify-center rounded-lg bg-[#161c2c]/60 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 transition cursor-pointer"
+            className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-[#131927]/70 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 transition cursor-pointer"
             title="Settings"
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-4 h-4" />
           </button>
+        </div>
 
-          {/* Minimize / Close */}
+        {/* Group Divider */}
+        <div className="w-[1px] h-5 bg-white/15 shrink-0" />
+
+        {/* GROUP 4: Window Controls (32x32px secondary controls, 8px gap) */}
+        <div className="flex items-center gap-2 app-no-drag shrink-0">
           <button
             onClick={() => window.electronAPI.minimizeApp()}
-            className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer ml-1"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer"
             title="Minimize"
           >
-            <Minus className="w-3.5 h-3.5" />
+            <Minus className="w-4 h-4" />
           </button>
 
           <button
             onClick={() => window.electronAPI.quitApp()}
-            className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition cursor-pointer"
             title="Exit Reco"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
