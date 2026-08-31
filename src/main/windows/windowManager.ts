@@ -24,7 +24,7 @@ export class WindowManager {
     this.createFloatingToolbarWindow();
   }
 
-  // 1. Independent Recording Frame Window (Resizable, Draggable anywhere across any screen)
+  // 1. Independent Recording Frame Window
   public createRecordingFrameWindow(): BrowserWindow {
     if (this.frameWindow) {
       this.frameWindow.show();
@@ -63,12 +63,10 @@ export class WindowManager {
       }
     });
 
-    // Exclude frame from video capture
     try {
       this.frameWindow.setContentProtection(true);
     } catch (err) {}
 
-    // Update coordinates on move/resize
     this.frameWindow.on('move', () => {
       if (this.frameWindow && !this.frameWindow.isDestroyed()) {
         const b = this.frameWindow.getBounds();
@@ -98,7 +96,7 @@ export class WindowManager {
     return this.frameWindow;
   }
 
-  // 2. Independent Floating Control Toolbar Window
+  // 2. Compact Floating Control Toolbar Window
   public createFloatingToolbarWindow(): BrowserWindow {
     if (this.toolbarWindow) {
       this.toolbarWindow.show();
@@ -108,14 +106,14 @@ export class WindowManager {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
 
-    const toolbarW = 720;
-    const toolbarH = 70;
+    const toolbarW = 640;
+    const toolbarH = 58;
 
     this.toolbarWindow = new BrowserWindow({
       width: toolbarW,
       height: toolbarH,
       x: Math.round(width / 2 - toolbarW / 2),
-      y: height - toolbarH - 20,
+      y: height - toolbarH - 24,
       frame: false,
       transparent: true,
       alwaysOnTop: true,
@@ -130,7 +128,6 @@ export class WindowManager {
       }
     });
 
-    // Exclude toolbar from video capture
     try {
       this.toolbarWindow.setContentProtection(true);
     } catch (err) {}
