@@ -142,6 +142,7 @@ For full compliance policies and audits, refer to the [`docs/`](docs/) directory
 * 🛡️ **[docs/SECURITY.md](docs/SECURITY.md)**: Vulnerability disclosure guidelines.
 * 🏷️ **[docs/TRADEMARKS.md](docs/TRADEMARKS.md)**: Brand identity and logo usage policies.
 * 🤝 **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)**: Contribution standards and workflow.
+* 🚀 **[docs/RELEASING.md](docs/RELEASING.md)**: Release automation and maintenance runbook.
 * 📜 **[docs/CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md)**: Community code of conduct.
 
 ---

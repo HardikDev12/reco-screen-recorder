@@ -1,0 +1,108 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Target version (e.g. 1.0.0)'
+        required: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build Windows Release & Publish
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate Release Tag vs package.json Version
+        shell: pwsh
+        run: |
+          $pkgVersion = (Get-Content package.json | ConvertFrom-Json).version
+          $tag = "${{ github.ref_name }}"
+          if ($tag -match "^v") {
+            $expectedTag = "v$pkgVersion"
+            if ($tag -ne $expectedTag) {
+              Write-Error "Version mismatch! Git tag is '$tag' but package.json version is '$pkgVersion' (expected '$expectedTag'). Failing release."
+              exit 1
+            }
+          }
+          Write-Host "Version validation passed: $pkgVersion ($tag)"
+
+      - name: Setup Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies (clean install)
+        run: npm ci
+
+      - name: Dependency security audit
+        run: npm audit --omit=dev
+
+      - name: Compile Electron and Vite bundles
+        run: npm run build:electron
+
+      - name: Package Windows Installer & Portable Executable
+        run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO: 0
+
+      - name: Validate Generated Release Artifacts
+        shell: pwsh
+        run: |
+          $setupPath = "dist/RECO-Setup.exe"
+          if (!(Test-Path $setupPath)) {
+            Write-Error "RECO-Setup.exe was not generated in dist/! Aborting release."
+            exit 1
+          }
+          $setupSize = (Get-Item $setupPath).Length
+          if ($setupSize -lt 50MB) {
+            Write-Error "RECO-Setup.exe size ($setupSize bytes) is unexpectedly small. Aborting release."
+            exit 1
+          }
+          Write-Host "Verified $setupPath ($([math]::Round($setupSize / 1MB, 2)) MB)"
+
+      - name: Generate SHA-256 Checksums
+        shell: pwsh
+        run: |
+          Set-Location dist
+          $hashes = @()
+          Get-ChildItem -File -Filter "RECO-*.exe" | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            $line = "$hash  $($_.Name)"
+            $hashes += $line
+            Set-Content -Path "$($_.Name).sha256" -Value $line
+          }
+          Set-Content -Path "SHA256SUMS.txt" -Value ($hashes -join "`n")
+          Get-Content "SHA256SUMS.txt"
+          Set-Location ..
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/RECO-Setup.exe
+            dist/RECO-Portable.exe
+            dist/latest.yml
+            dist/SHA256SUMS.txt
+            dist/*.sha256
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
