@@ -31,7 +31,7 @@ win:
   signAndEditExecutable: false
 
 nsis:
-  include: build/installer.nsh
+  include: asset/installer.nsh
   artifactName: RECO-Setup.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true

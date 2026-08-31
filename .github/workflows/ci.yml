@@ -31,6 +31,9 @@ jobs:
       - name: Dependency security audit
         run: npm audit --omit=dev
 
+      - name: Ensure FFmpeg binaries are ready
+        run: node scripts/download-ffmpeg.js
+
       - name: Typecheck and compile Electron & Vite
         run: npm run build:electron
 
