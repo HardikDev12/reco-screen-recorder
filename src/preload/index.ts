@@ -63,6 +63,14 @@ export const electronAPI = {
     };
   },
 
+  onTogglePause: (callback: () => void): (() => void) => {
+    const subscription = () => callback();
+    ipcRenderer.on('recording:toggle-pause', subscription);
+    return () => {
+      ipcRenderer.removeListener('recording:toggle-pause', subscription);
+    };
+  },
+
   onFrameBoundsUpdated: (callback: (bounds: RegionBounds) => void): (() => void) => {
     const subscription = (_event: any, bounds: RegionBounds) => callback(bounds);
     ipcRenderer.on('frame:bounds-updated', subscription);

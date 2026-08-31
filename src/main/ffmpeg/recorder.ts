@@ -9,6 +9,8 @@ export class FFmpegRecorder {
   private currentTempPath: string | null = null;
   private currentFinalPath: string | null = null;
   private startTime: number = 0;
+  private lastResumeTime: number = 0;
+  private activeDurationMs: number = 0;
   private isRecording: boolean = false;
   private isPaused: boolean = false;
   private detectedHardware: SystemHardwareInfo | null = null;
@@ -178,6 +180,8 @@ export class FFmpegRecorder {
     });
 
     this.startTime = Date.now();
+    this.lastResumeTime = this.startTime;
+    this.activeDurationMs = 0;
     this.isRecording = true;
     this.isPaused = false;
 
@@ -192,6 +196,7 @@ export class FFmpegRecorder {
     this.ffmpegProcess.on('close', (code) => {
       console.log(`FFmpeg process exited with code ${code}`);
       this.isRecording = false;
+      this.isPaused = false;
     });
 
     return {
@@ -201,7 +206,7 @@ export class FFmpegRecorder {
   }
 
   public writeChunk(chunk: Buffer): void {
-    if (this.isRecording && this.ffmpegProcess && this.ffmpegProcess.stdin.writable) {
+    if (this.isRecording && !this.isPaused && this.ffmpegProcess && this.ffmpegProcess.stdin.writable) {
       try {
         this.ffmpegProcess.stdin.write(chunk);
       } catch (err) {
@@ -211,11 +216,27 @@ export class FFmpegRecorder {
   }
 
   public pauseRecording(): void {
-    this.isPaused = true;
+    if (this.isRecording && !this.isPaused) {
+      this.activeDurationMs += (Date.now() - this.lastResumeTime);
+      this.isPaused = true;
+      console.log(`Recording paused. Accumulated active duration: ${this.activeDurationMs}ms`);
+    }
   }
 
   public resumeRecording(): void {
-    this.isPaused = false;
+    if (this.isRecording && this.isPaused) {
+      this.lastResumeTime = Date.now();
+      this.isPaused = false;
+      console.log('Recording resumed.');
+    }
+  }
+
+  public getIsPaused(): boolean {
+    return this.isPaused;
+  }
+
+  public getIsRecording(): boolean {
+    return this.isRecording;
   }
 
   public async stopRecording(): Promise<RecordingItem | null> {
@@ -223,7 +244,11 @@ export class FFmpegRecorder {
       return null;
     }
 
-    const duration = Math.max(1, Math.round((Date.now() - this.startTime) / 1000));
+    if (!this.isPaused) {
+      this.activeDurationMs += (Date.now() - this.lastResumeTime);
+    }
+
+    const duration = Math.max(1, Math.round(this.activeDurationMs / 1000));
     const tempPath = this.currentTempPath;
     const finalPath = this.currentFinalPath;
     const ffmpegBinary = this.resolvedFFmpegPath;
@@ -231,6 +256,7 @@ export class FFmpegRecorder {
     return new Promise((resolve) => {
       if (!this.ffmpegProcess) {
         this.isRecording = false;
+        this.isPaused = false;
         resolve(null);
         return;
       }
@@ -238,6 +264,7 @@ export class FFmpegRecorder {
       const proc = this.ffmpegProcess;
       this.ffmpegProcess = null;
       this.isRecording = false;
+      this.isPaused = false;
 
       // Close stdin so FFmpeg completes cleanly
       try {

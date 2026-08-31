@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom/client';
 import {
   Square,
@@ -46,8 +46,14 @@ const ToolbarApp: React.FC = () => {
     startRecording,
     pauseRecording,
     resumeRecording,
+    togglePause,
     stopRecording
   } = useMediaRecording();
+
+  const handleTogglePause = useCallback(async () => {
+    if (!isRecording) return;
+    await togglePause();
+  }, [isRecording, togglePause]);
 
   useEffect(() => {
     window.electronAPI.getSettings().then((s) => {
@@ -55,14 +61,29 @@ const ToolbarApp: React.FC = () => {
       preWarmCapturePipeline(s);
     });
 
-    const unsubscribe = window.electronAPI.onRecordingCompleted(() => {
+    const unsubCompleted = window.electronAPI.onRecordingCompleted(() => {
       setIsStopping(false);
     });
 
-    return () => {
-      unsubscribe();
+    const unsubTogglePause = window.electronAPI.onTogglePause(() => {
+      handleTogglePause();
+    });
+
+    // Local keyboard listener for Ctrl+Shift+P
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        handleTogglePause();
+      }
     };
-  }, [preWarmCapturePipeline]);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      unsubCompleted();
+      unsubTogglePause();
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [preWarmCapturePipeline, handleTogglePause]);
 
   const formatTime = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);
@@ -79,14 +100,6 @@ const ToolbarApp: React.FC = () => {
       await startRecording(settings);
     } catch (err) {
       console.error('Failed to start recording:', err);
-    }
-  };
-
-  const handleTogglePause = async () => {
-    if (isPaused) {
-      await resumeRecording();
-    } else {
-      await pauseRecording();
     }
   };
 
@@ -130,7 +143,7 @@ const ToolbarApp: React.FC = () => {
       <div className="toolbar-container">
         {/* GROUP 1: Drag + Status + Record/Stop */}
         <div className="toolbar-group">
-          {/* Horizontal Drag Grip (36x36px target, centered 16px horizontal grip icon) */}
+          {/* Horizontal Drag Grip */}
           <div
             className="app-draggable toolbar-drag-handle cursor-grab active:cursor-grabbing"
             title="Drag Toolbar Anywhere"
@@ -138,46 +151,67 @@ const ToolbarApp: React.FC = () => {
             <GripHorizontal className="w-4 h-4" />
           </div>
 
-          {/* Status Badge: 14px internal padding, 8px dot-to-text gap */}
+          {/* Status Badge */}
           <div className="toolbar-pill-status app-no-drag">
             {isStopping ? (
-              <span className="text-amber-400 animate-pulse">Saving...</span>
+              <span className="text-amber-400 animate-pulse font-medium">Saving...</span>
             ) : isRecording ? (
-              <>
-                <div className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-rose-500 animate-ping'} shrink-0`} />
-                <span className="font-mono text-white tracking-wider">
-                  {formatTime(recordingDuration)}
-                </span>
-              </>
+              isPaused ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-400 shadow-sm shadow-amber-400/80 shrink-0" />
+                  <span className="text-amber-400 font-semibold text-xs uppercase tracking-wider">Paused</span>
+                  <span className="font-mono text-amber-200 tracking-wider">
+                    {formatTime(recordingDuration)}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0" />
+                  <span className="font-mono text-white tracking-wider font-semibold">
+                    {formatTime(recordingDuration)}
+                  </span>
+                </div>
+              )
             ) : (
-              <>
+              <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse shrink-0" />
-                <span>Ready</span>
-              </>
+                <span className="font-medium text-slate-300">Ready</span>
+              </div>
             )}
           </div>
 
-          {/* Primary REC Button: 18px horizontal padding, 8px gap */}
+          {/* Primary REC / Controls Button Group */}
           <div className="app-no-drag shrink-0">
             {!isRecording ? (
               <button
                 onClick={handleStartRecord}
                 className="toolbar-btn-rec"
+                title="Start Screen Recording"
               >
                 <div className="w-2 h-2 rounded-full bg-white animate-ping shrink-0" />
                 <span>REC</span>
               </button>
             ) : (
               <div className="flex items-center gap-2">
+                {/* Pause / Resume Button */}
                 <button
                   onClick={handleTogglePause}
-                  className="toolbar-btn-text"
-                  title={isPaused ? 'Resume Recording' : 'Pause Recording'}
+                  className={`toolbar-btn-text transition-colors duration-150 ${
+                    isPaused
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+                      : 'hover:bg-white/10 text-slate-200'
+                  }`}
+                  title={isPaused ? 'Resume Recording (Ctrl+Shift+P)' : 'Pause Recording (Ctrl+Shift+P)'}
                 >
-                  {isPaused ? <Play className="w-4 h-4 fill-current shrink-0" /> : <Pause className="w-4 h-4 shrink-0" />}
+                  {isPaused ? (
+                    <Play className="w-3.5 h-3.5 fill-current text-amber-400 shrink-0" />
+                  ) : (
+                    <Pause className="w-3.5 h-3.5 shrink-0 text-slate-200" />
+                  )}
                   <span>{isPaused ? 'Resume' : 'Pause'}</span>
                 </button>
 
+                {/* Stop & Save Button */}
                 <button
                   onClick={handleStopRecord}
                   disabled={isStopping}
@@ -197,7 +231,7 @@ const ToolbarApp: React.FC = () => {
 
         {/* GROUP 2: Audio & Media Group */}
         <div className="toolbar-group app-no-drag">
-          {/* Microphone + Level Meter: 12px internal padding */}
+          {/* Microphone + Level Meter */}
           <div className="toolbar-mic-container">
             <button
               onClick={toggleMic}
@@ -221,7 +255,7 @@ const ToolbarApp: React.FC = () => {
             )}
           </div>
 
-          {/* System Audio Toggle (36x36px) */}
+          {/* System Audio Toggle */}
           <button
             onClick={toggleSystemAudio}
             className={`toolbar-icon-btn ${
@@ -232,7 +266,7 @@ const ToolbarApp: React.FC = () => {
             {settings.captureSystemAudio ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
           </button>
 
-          {/* Webcam Toggle (36x36px) */}
+          {/* Webcam Toggle */}
           <button
             onClick={toggleWebcam}
             className={`toolbar-icon-btn ${
@@ -249,7 +283,7 @@ const ToolbarApp: React.FC = () => {
 
         {/* GROUP 3: Tools & Secondary Group */}
         <div className="toolbar-group app-no-drag">
-          {/* Full Screen Button: 14px horizontal padding, 8px gap */}
+          {/* Full Screen Button */}
           <button
             onClick={handleSetFullScreen}
             className="toolbar-btn-text"
@@ -259,7 +293,7 @@ const ToolbarApp: React.FC = () => {
             <span>Full Screen</span>
           </button>
 
-          {/* Library Button (36x36px) */}
+          {/* Library Button */}
           <button
             onClick={() => window.electronAPI.openDashboard('library')}
             className="toolbar-icon-btn"
@@ -268,7 +302,7 @@ const ToolbarApp: React.FC = () => {
             <Film className="w-4 h-4" />
           </button>
 
-          {/* Settings Button (36x36px) */}
+          {/* Settings Button */}
           <button
             onClick={() => window.electronAPI.openDashboard('settings')}
             className="toolbar-icon-btn"
@@ -281,7 +315,7 @@ const ToolbarApp: React.FC = () => {
         {/* Group Divider */}
         <div className="toolbar-divider" />
 
-        {/* GROUP 4: Window Controls (32x32px) */}
+        {/* GROUP 4: Window Controls */}
         <div className="toolbar-group app-no-drag">
           <button
             onClick={() => window.electronAPI.minimizeApp()}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { CaptureSource, RecorderSettings, RecordingItem, RegionBounds } from '../../shared/types';
+import { RecorderSettings, RecordingItem, RegionBounds } from '../../shared/types';
 
 export function useMediaRecording() {
   const [isRecording, setIsRecording] = useState(false);
@@ -199,6 +199,7 @@ export function useMediaRecording() {
       setIsPaused(false);
       setRecordingDuration(0);
 
+      if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
@@ -210,28 +211,48 @@ export function useMediaRecording() {
 
   const pauseRecording = async () => {
     if (mediaRecorderRef.current && isRecording && !isPaused) {
-      mediaRecorderRef.current.pause();
+      if (mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.pause();
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
       await window.electronAPI.pauseRecording();
       setIsPaused(true);
-      if (timerRef.current) clearInterval(timerRef.current);
     }
   };
 
   const resumeRecording = async () => {
     if (mediaRecorderRef.current && isRecording && isPaused) {
-      mediaRecorderRef.current.resume();
-      await window.electronAPI.resumeRecording();
-      setIsPaused(false);
+      if (mediaRecorderRef.current.state === 'paused') {
+        mediaRecorderRef.current.resume();
+      }
+      if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
+      await window.electronAPI.resumeRecording();
+      setIsPaused(false);
+    }
+  };
+
+  const togglePause = async () => {
+    if (!isRecording) return;
+    if (isPaused) {
+      await resumeRecording();
+    } else {
+      await pauseRecording();
     }
   };
 
   const stopRecording = async (): Promise<RecordingItem | null> => {
     if (!isRecording) return null;
 
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
@@ -265,6 +286,7 @@ export function useMediaRecording() {
     startRecording,
     pauseRecording,
     resumeRecording,
+    togglePause,
     stopRecording
   };
 }

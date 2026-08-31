@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, globalShortcut } from 'electron';
 import { WindowManager } from './windows/windowManager';
 import { SourceManager } from './capture/sourceManager';
 import { FFmpegRecorder } from './ffmpeg/recorder';
@@ -38,11 +38,29 @@ if (!gotTheLock) {
     // Launch Independent Frame & Toolbar Windows
     windowManager.launchRecordingMode();
 
+    // Register global shortcut: Ctrl+Shift+P (Pause / Resume toggle)
+    try {
+      globalShortcut.register('CommandOrControl+Shift+P', () => {
+        if (ffmpegRecorder.getIsRecording()) {
+          const toolbar = windowManager.getToolbarWindow();
+          if (toolbar && !toolbar.isDestroyed()) {
+            toolbar.webContents.send('recording:toggle-pause');
+          }
+        }
+      });
+    } catch (err) {
+      console.warn('Failed to register global shortcut Ctrl+Shift+P:', err);
+    }
+
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
         windowManager.launchRecordingMode();
       }
     });
+  });
+
+  app.on('will-quit', () => {
+    globalShortcut.unregisterAll();
   });
 
   // --- IPC Handlers ---
@@ -109,7 +127,9 @@ if (!gotTheLock) {
     const result = await ffmpegRecorder.startRecording(settings, frameBounds);
 
     const frame = windowManager.getFrameWindow();
-    if (frame) frame.webContents.send('recording:state-changed', { status: 'recording' });
+    const toolbar = windowManager.getToolbarWindow();
+    if (frame && !frame.isDestroyed()) frame.webContents.send('recording:state-changed', { status: 'recording' });
+    if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('recording:state-changed', { status: 'recording' });
 
     return result;
   });
@@ -121,14 +141,18 @@ if (!gotTheLock) {
   ipcMain.handle('recording:pause', () => {
     ffmpegRecorder.pauseRecording();
     const frame = windowManager.getFrameWindow();
-    if (frame) frame.webContents.send('recording:state-changed', { status: 'paused' });
+    const toolbar = windowManager.getToolbarWindow();
+    if (frame && !frame.isDestroyed()) frame.webContents.send('recording:state-changed', { status: 'paused' });
+    if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('recording:state-changed', { status: 'paused' });
     return { success: true };
   });
 
   ipcMain.handle('recording:resume', () => {
     ffmpegRecorder.resumeRecording();
     const frame = windowManager.getFrameWindow();
-    if (frame) frame.webContents.send('recording:state-changed', { status: 'recording' });
+    const toolbar = windowManager.getToolbarWindow();
+    if (frame && !frame.isDestroyed()) frame.webContents.send('recording:state-changed', { status: 'recording' });
+    if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('recording:state-changed', { status: 'recording' });
     return { success: true };
   });
 
@@ -140,8 +164,11 @@ if (!gotTheLock) {
 
     const frame = windowManager.getFrameWindow();
     const toolbar = windowManager.getToolbarWindow();
-    if (frame) frame.webContents.send('recording:state-changed', { status: 'idle' });
-    if (toolbar) toolbar.webContents.send('recording:completed', item);
+    if (frame && !frame.isDestroyed()) frame.webContents.send('recording:state-changed', { status: 'idle' });
+    if (toolbar && !toolbar.isDestroyed()) {
+      toolbar.webContents.send('recording:state-changed', { status: 'idle' });
+      toolbar.webContents.send('recording:completed', item);
+    }
 
     return item;
   });

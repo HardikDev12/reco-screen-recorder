@@ -8,7 +8,7 @@ const FrameApp: React.FC = () => {
     width: window.innerWidth,
     height: window.innerHeight
   });
-  const [isRecording, setIsRecording] = useState(false);
+  const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'paused'>('idle');
 
   useEffect(() => {
     const handleResize = () => {
@@ -17,7 +17,11 @@ const FrameApp: React.FC = () => {
     window.addEventListener('resize', handleResize);
 
     const unsubState = window.electronAPI.onRecordingStateChanged((state) => {
-      setIsRecording(state.status === 'recording' || state.status === 'paused');
+      if (state.status === 'recording' || state.status === 'paused') {
+        setRecordingStatus(state.status as 'recording' | 'paused');
+      } else {
+        setRecordingStatus('idle');
+      }
     });
 
     return () => {
@@ -26,18 +30,32 @@ const FrameApp: React.FC = () => {
     };
   }, []);
 
+  const isRecording = recordingStatus === 'recording';
+  const isPaused = recordingStatus === 'paused';
+  const isActive = isRecording || isPaused;
+
   return (
     <div className="w-screen h-screen relative bg-transparent select-none overflow-hidden p-2">
       {/* ShowMore-Inspired Selection Recording Boundary */}
       <div
-        className={`w-full h-full relative border-2 border-dashed ${
-          isRecording ? 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.3)]' : 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.15)]'
+        className={`w-full h-full relative border-2 border-dashed transition-colors duration-200 ${
+          isPaused
+            ? 'border-amber-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]'
+            : isRecording
+            ? 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.3)]'
+            : 'border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.15)]'
         } bg-transparent flex items-center justify-center`}
       >
-        {/* Top-Left Floating Dimension Badge: 16px internal padding, 16px offset from frame border */}
+        {/* Top-Left Floating Dimension & State Badge */}
         <div className="absolute top-4 left-4 pointer-events-auto z-20">
-          <div className="app-draggable frame-dimension-badge">
-            <span className="text-rose-500 font-extrabold text-xs tracking-wider">RECO</span>
+          <div className="app-draggable frame-dimension-badge flex items-center gap-2">
+            <span
+              className={`font-extrabold text-xs tracking-wider ${
+                isPaused ? 'text-amber-400' : 'text-rose-500'
+              }`}
+            >
+              {isPaused ? 'PAUSED' : isRecording ? 'REC' : 'RECO'}
+            </span>
             <span className="text-slate-500 text-xs">•</span>
             <span className="font-mono text-xs font-bold text-slate-100 tracking-wide">
               {size.width} × {size.height}
@@ -45,8 +63,8 @@ const FrameApp: React.FC = () => {
           </div>
         </div>
 
-        {/* Center Drag Handle (44x44px hit area with original centered 16px Move icon) */}
-        {!isRecording && (
+        {/* Center Drag Handle */}
+        {!isActive && (
           <div className="pointer-events-auto z-20">
             <div
               className="app-draggable frame-drag-center"
@@ -57,8 +75,8 @@ const FrameApp: React.FC = () => {
           </div>
         )}
 
-        {/* 8 Corner & Edge Resize Handles (14x14px with 2px white border) */}
-        {!isRecording && (
+        {/* 8 Corner & Edge Resize Handles */}
+        {!isActive && (
           <>
             {/* Top Left */}
             <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-sm shadow-md pointer-events-none z-10" />
