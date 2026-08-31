@@ -12,6 +12,12 @@ files:
   - asset/**/*
   - package.json
 
+extraResources:
+  - from: bin/win64
+    to: bin/win64
+    filter:
+      - '**/*'
+
 win:
   icon: asset/icon.ico
   target:
@@ -25,6 +31,7 @@ win:
   signAndEditExecutable: false
 
 nsis:
+  artifactName: RECO-Setup.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
   perMachine: false
@@ -35,6 +42,7 @@ nsis:
   shortcutName: Reco
   installerIcon: asset/icon.ico
   uninstallerIcon: asset/icon.ico
+  uninstallDisplayName: Reco Screen Recorder
 
 portable:
-  artifactName: ${productName}-Portable-${version}.${ext}
+  artifactName: RECO-Portable.${ext}

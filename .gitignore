@@ -2,6 +2,9 @@
 node_modules/
 .pnpm-store/
 
+# Bundled Binaries & Downloads
+bin/
+
 # Build outputs
 dist/
 dist-electron/

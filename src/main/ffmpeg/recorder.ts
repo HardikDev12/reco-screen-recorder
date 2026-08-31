@@ -12,10 +12,34 @@ export class FFmpegRecorder {
   private isRecording: boolean = false;
   private isPaused: boolean = false;
   private detectedHardware: SystemHardwareInfo | null = null;
+  private resolvedFFmpegPath: string = 'ffmpeg';
 
   constructor() {
+    this.resolvedFFmpegPath = this.getFFmpegBinaryPath();
     this.detectHardware();
     this.registerProcessCleanup();
+  }
+
+  public getFFmpegBinaryPath(): string {
+    const candidates = [
+      // Production packaged electron extraResources
+      path.join(process.resourcesPath, 'bin', 'win64', 'ffmpeg.exe'),
+      path.join(process.resourcesPath, 'bin', 'ffmpeg.exe'),
+      path.join(process.resourcesPath, 'ffmpeg.exe'),
+      // Local development paths
+      path.join(app.getAppPath(), 'bin', 'win64', 'ffmpeg.exe'),
+      path.join(__dirname, '../../../../bin/win64/ffmpeg.exe'),
+      path.join(__dirname, '../../../bin/win64/ffmpeg.exe'),
+      path.join(process.cwd(), 'bin', 'win64', 'ffmpeg.exe')
+    ];
+
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+
+    return 'ffmpeg';
   }
 
   public getHardwareInfo(): SystemHardwareInfo {
@@ -30,10 +54,14 @@ export class FFmpegRecorder {
     let hasAmd = false;
     let hasIntel = false;
     let ffmpegFound = false;
-    let ffmpegPath = 'ffmpeg';
+    const ffmpegPath = this.resolvedFFmpegPath;
 
     try {
-      const output = execSync('ffmpeg -encoders', { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf-8' });
+      const output = execSync(`"${ffmpegPath}" -encoders`, {
+        stdio: ['ignore', 'pipe', 'ignore'],
+        encoding: 'utf-8',
+        windowsHide: true
+      });
       ffmpegFound = true;
       if (output.includes('h264_nvenc')) hasNvidia = true;
       if (output.includes('h264_amf')) hasAmd = true;
@@ -113,7 +141,6 @@ export class FFmpegRecorder {
     // Construct Video Filter: Optional Region Crop + Even dimensions + Standard BT.709 sRGB Color Matrix
     let videoFilters = 'format=yuv420p';
     if (cropBounds && cropBounds.width > 20 && cropBounds.height > 20) {
-      // Ensure even width/height and correct offset
       const cw = Math.floor(cropBounds.width / 2) * 2;
       const ch = Math.floor(cropBounds.height / 2) * 2;
       const cx = Math.floor(cropBounds.x);
@@ -143,9 +170,9 @@ export class FFmpegRecorder {
       this.currentTempPath
     ];
 
-    console.log('Spawning FFmpeg with args:', args.join(' '));
+    console.log(`Spawning FFmpeg (${this.resolvedFFmpegPath}) with args:`, args.join(' '));
 
-    this.ffmpegProcess = spawn('ffmpeg', args, {
+    this.ffmpegProcess = spawn(this.resolvedFFmpegPath, args, {
       windowsHide: true,
       stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -199,6 +226,7 @@ export class FFmpegRecorder {
     const duration = Math.max(1, Math.round((Date.now() - this.startTime) / 1000));
     const tempPath = this.currentTempPath;
     const finalPath = this.currentFinalPath;
+    const ffmpegBinary = this.resolvedFFmpegPath;
 
     return new Promise((resolve) => {
       if (!this.ffmpegProcess) {
@@ -230,7 +258,7 @@ export class FFmpegRecorder {
         if (tempPath && fs.existsSync(tempPath) && finalPath) {
           try {
             // Remux to faststart finalized MP4
-            execSync(`ffmpeg -y -i "${tempPath}" -c copy -movflags +faststart "${finalPath}"`, {
+            execSync(`"${ffmpegBinary}" -y -i "${tempPath}" -c copy -movflags +faststart "${finalPath}"`, {
               windowsHide: true,
               stdio: 'ignore'
             });
