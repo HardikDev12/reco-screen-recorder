@@ -7,13 +7,43 @@ export const electronAPI = {
   getFrameBounds: (): Promise<RegionBounds> => ipcRenderer.invoke('frame:get-bounds'),
   setFrameFullScreen: () => ipcRenderer.send('frame:set-fullscreen'),
 
-  // Region Selector Legacy Helpers
-  openRegionSelector: (): Promise<RegionBounds | null> => ipcRenderer.invoke('capture:open-region-selector'),
-  sendRegionSelected: (bounds: RegionBounds) => ipcRenderer.send('capture:region-selected', bounds),
-  cancelRegionSelection: () => ipcRenderer.send('capture:region-cancelled'),
+  // Countdown & GO Lifecycle
+  triggerCountdown: (seconds: number) => ipcRenderer.send('recording:trigger-countdown', seconds),
+  confirmStartRecording: () => ipcRenderer.send('recording:confirm-start'),
+  cancelCountdown: () => ipcRenderer.send('recording:cancel-countdown'),
+  notifyCountdownReady: () => ipcRenderer.send('recording:countdown-ready'),
 
-  // Mouse Pass-Through
-  setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send('overlay:set-ignore-mouse', ignore),
+  onTriggerCountdown: (callback: (seconds: number) => void): (() => void) => {
+    const subscription = (_event: any, seconds: number) => callback(seconds);
+    ipcRenderer.on('recording:trigger-countdown', subscription);
+    return () => {
+      ipcRenderer.removeListener('recording:trigger-countdown', subscription);
+    };
+  },
+
+  onCountdownReady: (callback: () => void): (() => void) => {
+    const subscription = () => callback();
+    ipcRenderer.on('recording:countdown-ready', subscription);
+    return () => {
+      ipcRenderer.removeListener('recording:countdown-ready', subscription);
+    };
+  },
+
+  onCountdownCancelled: (callback: () => void): (() => void) => {
+    const subscription = () => callback();
+    ipcRenderer.on('recording:cancel-countdown', subscription);
+    return () => {
+      ipcRenderer.removeListener('recording:cancel-countdown', subscription);
+    };
+  },
+
+  onStartRecordingConfirmed: (callback: () => void): (() => void) => {
+    const subscription = () => callback();
+    ipcRenderer.on('recording:confirm-start', subscription);
+    return () => {
+      ipcRenderer.removeListener('recording:confirm-start', subscription);
+    };
+  },
 
   // Primary Recording Lifecycle
   startRecording: (
@@ -25,6 +55,24 @@ export const electronAPI = {
   resumeRecording: () => ipcRenderer.invoke('recording:resume'),
   stopRecording: (): Promise<RecordingItem | null> => ipcRenderer.invoke('recording:stop'),
 
+  // Preview Actions
+  savePreviewRecording: (filePath: string): Promise<RecordingItem | null> =>
+    ipcRenderer.invoke('preview:save', filePath),
+  saveAsPreviewRecording: (filePath: string): Promise<RecordingItem | null> =>
+    ipcRenderer.invoke('preview:save-as', filePath),
+  recordAgainPreview: (filePath: string): Promise<void> =>
+    ipcRenderer.invoke('preview:record-again', filePath),
+  discardPreviewRecording: (filePath: string): Promise<void> =>
+    ipcRenderer.invoke('preview:discard', filePath),
+
+  onPreviewData: (callback: (item: RecordingItem) => void): (() => void) => {
+    const subscription = (_event: any, item: RecordingItem) => callback(item);
+    ipcRenderer.on('preview:data', subscription);
+    return () => {
+      ipcRenderer.removeListener('preview:data', subscription);
+    };
+  },
+
   // Window Actions
   openDashboard: (view: 'library' | 'settings' = 'library') => ipcRenderer.send('app:open-dashboard', view),
   minimizeApp: () => ipcRenderer.send('app:minimize'),
@@ -35,6 +83,8 @@ export const electronAPI = {
   saveSettings: (settings: Partial<RecorderSettings>): Promise<RecorderSettings> =>
     ipcRenderer.invoke('settings:save', settings),
   selectDirectory: (): Promise<string | null> => ipcRenderer.invoke('settings:select-directory'),
+  resetDefaultSaveLocation: (): Promise<string> => ipcRenderer.invoke('settings:reset-default-location'),
+  openSaveLocationFolder: () => ipcRenderer.invoke('settings:open-folder'),
 
   // Hardware Info
   getHardwareInfo: (): Promise<SystemHardwareInfo> => ipcRenderer.invoke('system:get-hardware-info'),

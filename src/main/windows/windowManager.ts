@@ -1,12 +1,13 @@
 import { BrowserWindow, screen, ipcMain, app } from 'electron';
 import path from 'node:path';
-import { RegionBounds } from '../../shared/types';
+import { RegionBounds, RecordingItem } from '../../shared/types';
 
 export class WindowManager {
   private frameWindow: BrowserWindow | null = null;
   private toolbarWindow: BrowserWindow | null = null;
   private dashboardWindow: BrowserWindow | null = null;
   private webcamWindow: BrowserWindow | null = null;
+  private previewWindow: BrowserWindow | null = null;
 
   // Track the physical bounds of the recording frame
   private currentFrameBounds: RegionBounds = { x: 100, y: 100, width: 1280, height: 720 };
@@ -54,6 +55,7 @@ export class WindowManager {
     const appIcon = path.join(__dirname, '../../asset/icon.png');
 
     this.frameWindow = new BrowserWindow({
+      title: 'Reco Frame',
       width: frameW,
       height: frameH,
       x: frameX,
@@ -211,6 +213,63 @@ export class WindowManager {
     }
   }
 
+  // 3. Standalone Recording Preview Window
+  public createPreviewWindow(stagedItem: RecordingItem): BrowserWindow {
+    if (this.previewWindow && !this.previewWindow.isDestroyed()) {
+      this.previewWindow.show();
+      this.previewWindow.focus();
+      this.previewWindow.webContents.send('preview:data', stagedItem);
+      return this.previewWindow;
+    }
+
+    const appIcon = path.join(__dirname, '../../asset/icon.png');
+
+    this.previewWindow = new BrowserWindow({
+      title: 'Reco — Recording Preview',
+      width: 1040,
+      height: 720,
+      minWidth: 800,
+      minHeight: 560,
+      backgroundColor: '#0b0f17',
+      frame: true,
+      autoHideMenuBar: true,
+      icon: appIcon,
+      alwaysOnTop: true,
+      webPreferences: {
+        preload: path.join(__dirname, '../preload/index.js'),
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    });
+
+    this.hardenWindowSecurity(this.previewWindow);
+
+    this.previewWindow.webContents.on('did-finish-load', () => {
+      if (this.previewWindow && !this.previewWindow.isDestroyed()) {
+        this.previewWindow.webContents.send('preview:data', stagedItem);
+      }
+    });
+
+    if (process.env.VITE_DEV_SERVER_URL) {
+      this.previewWindow.loadURL(`${process.env.VITE_DEV_SERVER_URL}/preview.html`);
+    } else {
+      this.previewWindow.loadFile(path.join(__dirname, '../../dist/preview.html'));
+    }
+
+    this.previewWindow.on('closed', () => {
+      this.previewWindow = null;
+    });
+
+    return this.previewWindow;
+  }
+
+  public closePreviewWindow(): void {
+    if (this.previewWindow && !this.previewWindow.isDestroyed()) {
+      this.previewWindow.close();
+      this.previewWindow = null;
+    }
+  }
+
   public openDashboardWindow(view: 'library' | 'settings' = 'library'): BrowserWindow {
     if (this.dashboardWindow && !this.dashboardWindow.isDestroyed()) {
       this.dashboardWindow.show();
@@ -222,12 +281,12 @@ export class WindowManager {
     const appIcon = path.join(__dirname, '../../asset/icon.png');
 
     this.dashboardWindow = new BrowserWindow({
-      width: 960,
-      height: 640,
-      minWidth: 840,
-      minHeight: 560,
-      title: 'Reco — Settings & Library',
-      backgroundColor: '#0d1117',
+      width: 980,
+      height: 680,
+      minWidth: 860,
+      minHeight: 580,
+      title: 'Reco — Manager',
+      backgroundColor: '#0b0f17',
       frame: true,
       autoHideMenuBar: true,
       icon: appIcon,
@@ -327,6 +386,10 @@ export class WindowManager {
     if (this.webcamWindow && !this.webcamWindow.isDestroyed()) {
       this.webcamWindow.close();
       this.webcamWindow = null;
+    }
+    if (this.previewWindow && !this.previewWindow.isDestroyed()) {
+      this.previewWindow.close();
+      this.previewWindow = null;
     }
   }
 }

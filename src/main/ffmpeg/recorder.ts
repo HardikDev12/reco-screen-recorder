@@ -7,7 +7,7 @@ import { EncoderChoice, RecorderSettings, RecordingItem, SystemHardwareInfo, Reg
 export class FFmpegRecorder {
   private ffmpegProcess: ChildProcessWithoutNullStreams | null = null;
   private currentTempPath: string | null = null;
-  private currentFinalPath: string | null = null;
+  private currentFinalStagedPath: string | null = null;
   private startTime: number = 0;
   private lastResumeTime: number = 0;
   private activeDurationMs: number = 0;
@@ -15,20 +15,25 @@ export class FFmpegRecorder {
   private isPaused: boolean = false;
   private detectedHardware: SystemHardwareInfo | null = null;
   private resolvedFFmpegPath: string = 'ffmpeg';
+  private tempStagingDir: string = path.join(app.getPath('temp'), 'reco-temp');
 
   constructor() {
     this.resolvedFFmpegPath = this.getFFmpegBinaryPath();
     this.detectHardware();
     this.registerProcessCleanup();
+
+    if (!fs.existsSync(this.tempStagingDir)) {
+      try {
+        fs.mkdirSync(this.tempStagingDir, { recursive: true });
+      } catch (e) {}
+    }
   }
 
   public getFFmpegBinaryPath(): string {
     const candidates = [
-      // Production packaged electron extraResources
       path.join(process.resourcesPath, 'bin', 'win64', 'ffmpeg.exe'),
       path.join(process.resourcesPath, 'bin', 'ffmpeg.exe'),
       path.join(process.resourcesPath, 'ffmpeg.exe'),
-      // Local development paths
       path.join(app.getAppPath(), 'bin', 'win64', 'ffmpeg.exe'),
       path.join(__dirname, '../../../../bin/win64/ffmpeg.exe'),
       path.join(__dirname, '../../../bin/win64/ffmpeg.exe'),
@@ -114,7 +119,6 @@ export class FFmpegRecorder {
         break;
     }
 
-    // Default high-performance software fallback with clean BT.709 colors
     return ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '19'];
   }
 
@@ -126,21 +130,20 @@ export class FFmpegRecorder {
       throw new Error('Recording is already in progress');
     }
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const fileName = `Reco_${timestamp}.mp4`;
-    const finalDir = settings.outputPath || path.join(app.getPath('videos'), 'Reco');
-
-    if (!fs.existsSync(finalDir)) {
-      fs.mkdirSync(finalDir, { recursive: true });
+    if (!fs.existsSync(this.tempStagingDir)) {
+      fs.mkdirSync(this.tempStagingDir, { recursive: true });
     }
 
-    this.currentFinalPath = path.join(finalDir, fileName);
-    this.currentTempPath = path.join(finalDir, `temp_${fileName}`);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const formatExt = settings.defaultFormat || 'mp4';
+    const fileName = `Reco_${timestamp}.${formatExt}`;
+
+    this.currentFinalStagedPath = path.join(this.tempStagingDir, fileName);
+    this.currentTempPath = path.join(this.tempStagingDir, `raw_${fileName}`);
 
     const encoderArgs = this.getEncoderArgs(settings.encoder);
     const targetFps = settings.framerate || 60;
 
-    // Construct Video Filter: Clamped Region Crop + Even dimensions + Standard BT.709 sRGB Color Matrix
     let videoFilters = 'format=yuv420p';
     if (cropBounds && cropBounds.width > 20 && cropBounds.height > 20) {
       try {
@@ -154,12 +157,8 @@ export class FFmpegRecorder {
         let cw = Math.floor(cropBounds.width * scale);
         let ch = Math.floor(cropBounds.height * scale);
 
-        if (cx + cw > screenW) {
-          cw = screenW - cx;
-        }
-        if (cy + ch > screenH) {
-          ch = screenH - cy;
-        }
+        if (cx + cw > screenW) cw = screenW - cx;
+        if (cy + ch > screenH) ch = screenH - cy;
 
         cw = Math.floor(cw / 2) * 2;
         ch = Math.floor(ch / 2) * 2;
@@ -180,16 +179,13 @@ export class FFmpegRecorder {
       '-vf', videoFilters,
       ...encoderArgs,
       '-r', `${targetFps}`,
-      // Color consistency flags (prevent over-brightness/gamma mismatch)
       '-colorspace', 'bt709',
       '-color_primaries', 'bt709',
       '-color_trc', 'bt709',
       '-color_range', 'tv',
-      // Pristine 48kHz audio encoding
       '-c:a', 'aac',
       '-b:a', '192k',
       '-ar', '48000',
-      // Fragmented MP4 for instant crash resilience
       '-movflags', 'frag_keyframe+empty_moov+default_base_moof',
       this.currentTempPath
     ];
@@ -223,7 +219,7 @@ export class FFmpegRecorder {
 
     return {
       success: true,
-      filePath: this.currentFinalPath
+      filePath: this.currentFinalStagedPath
     };
   }
 
@@ -241,7 +237,6 @@ export class FFmpegRecorder {
     if (this.isRecording && !this.isPaused) {
       this.activeDurationMs += (Date.now() - this.lastResumeTime);
       this.isPaused = true;
-      console.log(`Recording paused. Accumulated active duration: ${this.activeDurationMs}ms`);
     }
   }
 
@@ -249,7 +244,6 @@ export class FFmpegRecorder {
     if (this.isRecording && this.isPaused) {
       this.lastResumeTime = Date.now();
       this.isPaused = false;
-      console.log('Recording resumed.');
     }
   }
 
@@ -272,7 +266,7 @@ export class FFmpegRecorder {
 
     const duration = Math.max(1, Math.round(this.activeDurationMs / 1000));
     const tempPath = this.currentTempPath;
-    const finalPath = this.currentFinalPath;
+    const finalStagedPath = this.currentFinalStagedPath;
     const ffmpegBinary = this.resolvedFFmpegPath;
 
     return new Promise((resolve) => {
@@ -288,7 +282,6 @@ export class FFmpegRecorder {
       this.isRecording = false;
       this.isPaused = false;
 
-      // Close stdin so FFmpeg completes cleanly
       try {
         proc.stdin.end();
       } catch (err) {
@@ -304,35 +297,40 @@ export class FFmpegRecorder {
       proc.on('close', () => {
         clearTimeout(finishTimeout);
 
-        if (tempPath && fs.existsSync(tempPath) && finalPath) {
+        if (tempPath && fs.existsSync(tempPath) && finalStagedPath) {
           try {
-            // Remux to faststart finalized MP4
-            execSync(`"${ffmpegBinary}" -y -i "${tempPath}" -c copy -movflags +faststart "${finalPath}"`, {
+            execSync(`"${ffmpegBinary}" -y -i "${tempPath}" -c copy -movflags +faststart "${finalStagedPath}"`, {
               windowsHide: true,
               stdio: 'ignore'
             });
-            // Clean up temp file
             try {
               fs.unlinkSync(tempPath);
             } catch (e) {}
           } catch (err) {
             console.warn('Faststart remux failed, renaming temp file directly:', err);
-            fs.renameSync(tempPath, finalPath);
+            try {
+              fs.renameSync(tempPath, finalStagedPath);
+            } catch (e) {}
           }
 
-          const stats = fs.statSync(finalPath);
-          const recordingItem: RecordingItem = {
-            id: `rec_${Date.now()}`,
-            filePath: finalPath,
-            fileName: path.basename(finalPath),
-            duration,
-            fileSize: stats.size,
-            timestamp: Date.now(),
-            resolution: 'Custom Region',
-            fps: 60
-          };
+          if (fs.existsSync(finalStagedPath)) {
+            const stats = fs.statSync(finalStagedPath);
+            const stagedItem: RecordingItem = {
+              id: `rec_${Date.now()}`,
+              filePath: finalStagedPath,
+              fileName: path.basename(finalStagedPath),
+              duration,
+              fileSize: stats.size,
+              timestamp: Date.now(),
+              resolution: '1920 × 1080',
+              fps: 60,
+              format: path.extname(finalStagedPath).replace('.', '').toUpperCase()
+            };
 
-          resolve(recordingItem);
+            resolve(stagedItem);
+          } else {
+            resolve(null);
+          }
         } else {
           resolve(null);
         }

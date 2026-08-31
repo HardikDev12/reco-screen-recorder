@@ -14,10 +14,11 @@ import {
   Maximize2,
   Minus,
   X,
-  GripHorizontal
+  GripHorizontal,
+  Sparkles
 } from 'lucide-react';
 import { useMediaRecording } from './hooks/useMediaRecording';
-import { RecorderSettings } from '../shared/types';
+import { RecorderSettings, RecordingStatus } from '../shared/types';
 import './index.css';
 
 const ToolbarApp: React.FC = () => {
@@ -30,10 +31,13 @@ const ToolbarApp: React.FC = () => {
     captureSystemAudio: true,
     showWebcam: false,
     hardwareAcceleration: true,
-    countdownSeconds: 0,
-    highlightClicks: false
+    countdownSeconds: 3,
+    highlightClicks: false,
+    defaultFormat: 'mp4',
+    autoConvert: 'never'
   });
 
+  const [uiStatus, setUiStatus] = useState<RecordingStatus>('idle');
   const [isStopping, setIsStopping] = useState(false);
 
   const {
@@ -54,31 +58,71 @@ const ToolbarApp: React.FC = () => {
   isRecordingRef.current = isRecording;
   const togglePauseRef = useRef(togglePause);
   togglePauseRef.current = togglePause;
+  const uiStatusRef = useRef(uiStatus);
+  uiStatusRef.current = uiStatus;
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
   const handleTogglePause = useCallback(async () => {
     if (!isRecordingRef.current) return;
     await togglePauseRef.current();
   }, []);
 
+  const handleStartCapture = useCallback(async () => {
+    try {
+      await startRecording(settingsRef.current);
+    } catch (err) {
+      console.error('Failed to start capture:', err);
+      setUiStatus('idle');
+    }
+  }, [startRecording]);
+
   useEffect(() => {
     window.electronAPI.getSettings().then((s) => {
       setSettings(s);
+      settingsRef.current = s;
       initMicrophoneMeter(s);
     });
 
     const unsubCompleted = window.electronAPI.onRecordingCompleted(() => {
       setIsStopping(false);
+      setUiStatus('idle');
     });
 
     const unsubTogglePause = window.electronAPI.onTogglePause(() => {
       handleTogglePause();
     });
 
-    // Local keyboard listener for Ctrl+Shift+P
+    const unsubStateChanged = window.electronAPI.onRecordingStateChanged((state) => {
+      setUiStatus(state.status as RecordingStatus);
+    });
+
+    const unsubConfirmStart = (window.electronAPI as any).onStartRecordingConfirmed?.(() => {
+      handleStartCapture();
+    });
+
+    // Shortcut: Ctrl+Shift+R (Record / Stop / Confirm GO)
+    const handleToggleRecordShortcut = () => {
+      if (isRecordingRef.current) {
+        handleStopRecord();
+      } else if (uiStatusRef.current === 'ready') {
+        handleStartCapture();
+      } else if (uiStatusRef.current === 'idle') {
+        handleRecClick();
+      }
+    };
+
+    const unsubShortcut = (window.electronAPI as any).onToggleRecordShortcut?.(() => {
+      handleToggleRecordShortcut();
+    });
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         handleTogglePause();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        handleToggleRecordShortcut();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -86,9 +130,12 @@ const ToolbarApp: React.FC = () => {
     return () => {
       unsubCompleted();
       unsubTogglePause();
+      unsubStateChanged();
+      if (unsubConfirmStart) unsubConfirmStart();
+      if (unsubShortcut) unsubShortcut();
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []); // Run strictly once on mount
+  }, []); // Mount strictly once
 
   const formatTime = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);
@@ -100,12 +147,10 @@ const ToolbarApp: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleStartRecord = async () => {
-    try {
-      await startRecording(settings);
-    } catch (err) {
-      console.error('Failed to start recording:', err);
-    }
+  const handleRecClick = () => {
+    const count = settingsRef.current.countdownSeconds ?? 3;
+    setUiStatus(count > 0 ? 'countdown' : 'ready');
+    window.electronAPI.triggerCountdown(count);
   };
 
   const handleStopRecord = async () => {
@@ -115,12 +160,14 @@ const ToolbarApp: React.FC = () => {
     } catch (err) {
       console.error('Failed to stop recording:', err);
       setIsStopping(false);
+      setUiStatus('idle');
     }
   };
 
   const toggleMic = async () => {
     const updated = { ...settings, captureMicrophone: !settings.captureMicrophone };
     setSettings(updated);
+    settingsRef.current = updated;
     await window.electronAPI.saveSettings(updated);
     initMicrophoneMeter(updated);
   };
@@ -128,12 +175,14 @@ const ToolbarApp: React.FC = () => {
   const toggleSystemAudio = async () => {
     const updated = { ...settings, captureSystemAudio: !settings.captureSystemAudio };
     setSettings(updated);
+    settingsRef.current = updated;
     await window.electronAPI.saveSettings(updated);
   };
 
   const toggleWebcam = () => {
     const nextVal = !settings.showWebcam;
     setSettings((prev) => ({ ...prev, showWebcam: nextVal }));
+    settingsRef.current = { ...settingsRef.current, showWebcam: nextVal };
     window.electronAPI.toggleWebcamOverlay(nextVal);
   };
 
@@ -141,9 +190,11 @@ const ToolbarApp: React.FC = () => {
     window.electronAPI.setFrameFullScreen();
   };
 
+  const isCountdown = uiStatus === 'countdown';
+  const isReady = uiStatus === 'ready';
+
   return (
     <div className="w-screen h-screen flex items-center justify-center p-2 bg-transparent select-none overflow-hidden font-sans">
-      {/* Normalized Toolbar Container */}
       <div className="toolbar-container">
         {/* GROUP 1: Drag + Status + Record/Stop */}
         <div className="toolbar-group">
@@ -158,7 +209,7 @@ const ToolbarApp: React.FC = () => {
           {/* Status Badge */}
           <div className="toolbar-pill-status app-no-drag">
             {isStopping ? (
-              <span className="text-amber-400 animate-pulse font-medium">Saving...</span>
+              <span className="text-amber-400 animate-pulse font-medium">Processing...</span>
             ) : isRecording ? (
               isPaused ? (
                 <div className="flex items-center gap-2">
@@ -176,6 +227,16 @@ const ToolbarApp: React.FC = () => {
                   </span>
                 </div>
               )
+            ) : isCountdown ? (
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-indigo-400 animate-ping shrink-0" />
+                <span className="font-medium text-indigo-300">Countdown...</span>
+              </div>
+            ) : isReady ? (
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <span className="font-bold text-emerald-400 uppercase tracking-wide text-[11px]">GO / Ready</span>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse shrink-0" />
@@ -188,9 +249,10 @@ const ToolbarApp: React.FC = () => {
           <div className="app-no-drag shrink-0">
             {!isRecording ? (
               <button
-                onClick={handleStartRecord}
-                className="toolbar-btn-rec"
-                title="Start Screen Recording"
+                onClick={handleRecClick}
+                disabled={isCountdown}
+                className={`toolbar-btn-rec ${isCountdown ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title="Start 3-2-1 Countdown (Ctrl+Shift+R)"
               >
                 <div className="w-2 h-2 rounded-full bg-white animate-ping shrink-0" />
                 <span>REC</span>
@@ -220,7 +282,7 @@ const ToolbarApp: React.FC = () => {
                   onClick={handleStopRecord}
                   disabled={isStopping}
                   className="toolbar-btn-done"
-                  title="Stop & Save Recording"
+                  title="Stop & Preview Recording (Ctrl+Shift+R)"
                 >
                   <Square className="w-3.5 h-3.5 fill-current shrink-0" />
                   <span>Done</span>
@@ -301,7 +363,7 @@ const ToolbarApp: React.FC = () => {
           <button
             onClick={() => window.electronAPI.openDashboard('library')}
             className="toolbar-icon-btn"
-            title="Recordings History"
+            title="Recordings Library"
           >
             <Film className="w-4 h-4" />
           </button>
@@ -310,7 +372,7 @@ const ToolbarApp: React.FC = () => {
           <button
             onClick={() => window.electronAPI.openDashboard('settings')}
             className="toolbar-icon-btn"
-            title="Settings"
+            title="Preferences & Settings"
           >
             <Settings className="w-4 h-4" />
           </button>

@@ -1,9 +1,11 @@
-import { app, BrowserWindow, ipcMain, dialog, globalShortcut } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, globalShortcut, shell } from 'electron';
+import path from 'node:path';
+import fs from 'node:fs';
 import { WindowManager } from './windows/windowManager';
 import { SourceManager } from './capture/sourceManager';
 import { FFmpegRecorder } from './ffmpeg/recorder';
 import { RecordingsStore } from './storage/recordingsStore';
-import { RecorderSettings, RegionBounds } from '../shared/types';
+import { RecorderSettings, RegionBounds, RecordingItem } from '../shared/types';
 
 // Set application identity for Windows Shell and Task Manager
 app.name = 'Reco';
@@ -44,8 +46,9 @@ if (!gotTheLock) {
     // Launch Independent Frame & Toolbar Windows
     windowManager.launchRecordingMode();
 
-    // Register global shortcut: Ctrl+Shift+P (Pause / Resume toggle)
+    // Register global shortcuts
     try {
+      // Ctrl+Shift+P (Pause / Resume toggle)
       globalShortcut.register('CommandOrControl+Shift+P', () => {
         if (ffmpegRecorder.getIsRecording()) {
           const toolbar = windowManager.getToolbarWindow();
@@ -54,8 +57,17 @@ if (!gotTheLock) {
           }
         }
       });
+
+      // Ctrl+Shift+R (Record / Stop / Confirm GO toggle)
+      globalShortcut.register('CommandOrControl+Shift+R', () => {
+        const toolbar = windowManager.getToolbarWindow();
+        const frame = windowManager.getFrameWindow();
+        if (toolbar && !toolbar.isDestroyed()) {
+          toolbar.webContents.send('recording:toggle-record-shortcut');
+        }
+      });
     } catch (err) {
-      console.warn('Failed to register global shortcut Ctrl+Shift+P:', err);
+      console.warn('Failed to register global shortcuts:', err);
     }
 
     app.on('activate', () => {
@@ -70,9 +82,91 @@ if (!gotTheLock) {
     windowManager.closeAllAuxiliaryWindows();
   });
 
-  // --- IPC Handlers ---
+  // --- Countdown & GO Coordination Handlers ---
+  ipcMain.on('recording:trigger-countdown', (_event, seconds: number) => {
+    const frame = windowManager.getFrameWindow();
+    if (frame && !frame.isDestroyed()) {
+      frame.webContents.send('recording:trigger-countdown', seconds);
+    }
+  });
 
-  // Frame Bounds Management
+  ipcMain.on('recording:countdown-ready', () => {
+    const frame = windowManager.getFrameWindow();
+    const toolbar = windowManager.getToolbarWindow();
+    if (frame && !frame.isDestroyed()) frame.webContents.send('recording:state-changed', { status: 'ready' });
+    if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('recording:state-changed', { status: 'ready' });
+  });
+
+  ipcMain.on('recording:cancel-countdown', () => {
+    const frame = windowManager.getFrameWindow();
+    const toolbar = windowManager.getToolbarWindow();
+    if (frame && !frame.isDestroyed()) frame.webContents.send('recording:state-changed', { status: 'idle' });
+    if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('recording:state-changed', { status: 'idle' });
+  });
+
+  ipcMain.on('recording:confirm-start', () => {
+    const toolbar = windowManager.getToolbarWindow();
+    if (toolbar && !toolbar.isDestroyed()) {
+      toolbar.webContents.send('recording:confirm-start');
+    }
+  });
+
+  // --- Preview & Save Handlers ---
+  ipcMain.handle('preview:save', async (_event, filePath: string) => {
+    const item = recordingsStore.commitTempRecording(filePath);
+    windowManager.closePreviewWindow();
+
+    const toolbar = windowManager.getToolbarWindow();
+    if (toolbar && !toolbar.isDestroyed()) {
+      toolbar.webContents.send('recording:completed', item);
+    }
+    return item;
+  });
+
+  ipcMain.handle('preview:save-as', async (_event, filePath: string) => {
+    const previewWin = BrowserWindow.getFocusedWindow();
+    const ext = path.extname(filePath) || '.mp4';
+    const result = await dialog.showSaveDialog(previewWin || (undefined as any), {
+      title: 'Save Recording As',
+      defaultPath: path.join(recordingsStore.getSettings().outputPath, path.basename(filePath).replace(/^temp_/, '')),
+      filters: [{ name: 'Video Files', extensions: [ext.replace('.', ''), 'mp4', 'mkv', 'webm'] }]
+    });
+
+    if (!result.canceled && result.filePath) {
+      const item = recordingsStore.commitTempRecording(filePath, result.filePath);
+      windowManager.closePreviewWindow();
+
+      const toolbar = windowManager.getToolbarWindow();
+      if (toolbar && !toolbar.isDestroyed()) {
+        toolbar.webContents.send('recording:completed', item);
+      }
+      return item;
+    }
+    return null;
+  });
+
+  ipcMain.handle('preview:record-again', async (_event, filePath: string) => {
+    recordingsStore.discardTempRecording(filePath);
+    windowManager.closePreviewWindow();
+
+    const toolbar = windowManager.getToolbarWindow();
+    const frame = windowManager.getFrameWindow();
+    if (toolbar && !toolbar.isDestroyed()) {
+      toolbar.show();
+      toolbar.focus();
+    }
+    if (frame && !frame.isDestroyed()) {
+      frame.show();
+      frame.setAlwaysOnTop(true);
+    }
+  });
+
+  ipcMain.handle('preview:discard', async (_event, filePath: string) => {
+    recordingsStore.discardTempRecording(filePath);
+    windowManager.closePreviewWindow();
+  });
+
+  // --- Frame Bounds Management ---
   ipcMain.handle('frame:get-bounds', () => {
     return windowManager.getCurrentFrameBounds();
   });
@@ -124,6 +218,17 @@ if (!gotTheLock) {
     return null;
   });
 
+  ipcMain.handle('settings:reset-default-location', () => {
+    return recordingsStore.resetDefaultOutputPath();
+  });
+
+  ipcMain.handle('settings:open-folder', () => {
+    const settings = recordingsStore.getSettings();
+    if (fs.existsSync(settings.outputPath)) {
+      shell.openPath(settings.outputPath);
+    }
+  });
+
   // Hardware Info
   ipcMain.handle('system:get-hardware-info', () => {
     return ffmpegRecorder.getHardwareInfo();
@@ -165,20 +270,19 @@ if (!gotTheLock) {
   });
 
   ipcMain.handle('recording:stop', async () => {
-    const item = await ffmpegRecorder.stopRecording();
-    if (item) {
-      recordingsStore.addRecording(item);
-    }
+    const stagedItem = await ffmpegRecorder.stopRecording();
 
     const frame = windowManager.getFrameWindow();
     const toolbar = windowManager.getToolbarWindow();
     if (frame && !frame.isDestroyed()) frame.webContents.send('recording:state-changed', { status: 'idle' });
-    if (toolbar && !toolbar.isDestroyed()) {
-      toolbar.webContents.send('recording:state-changed', { status: 'idle' });
-      toolbar.webContents.send('recording:completed', item);
+    if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('recording:state-changed', { status: 'idle' });
+
+    // Open Recording Preview Window
+    if (stagedItem) {
+      windowManager.createPreviewWindow(stagedItem);
     }
 
-    return item;
+    return stagedItem;
   });
 
   // History & File Actions

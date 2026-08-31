@@ -19,6 +19,9 @@ export interface RegionBounds {
 export type EncoderChoice = 'auto' | 'nvenc' | 'amf' | 'qsv' | 'x264';
 export type FramerateChoice = 30 | 60;
 export type ResolutionChoice = '1080p' | '720p' | 'original';
+export type CountdownChoice = 0 | 3 | 5;
+export type OutputFormatChoice = 'mp4' | 'mkv' | 'webm';
+export type AutoConvertChoice = 'never' | 'ask' | 'always';
 
 export interface RecorderSettings {
   outputPath: string;
@@ -31,8 +34,11 @@ export interface RecorderSettings {
   showWebcam: boolean;
   selectedWebcamId?: string;
   hardwareAcceleration: boolean;
-  countdownSeconds: number;
+  countdownSeconds: CountdownChoice;
   highlightClicks: boolean;
+  defaultFormat: OutputFormatChoice;
+  autoConvert: AutoConvertChoice;
+  lastSaveLocation?: string;
 }
 
 export interface RecordingItem {
@@ -45,9 +51,25 @@ export interface RecordingItem {
   thumbnailUrl?: string;
   resolution: string;
   fps: number;
+  format?: string;
 }
 
-export type RecordingStatus = 'idle' | 'countdown' | 'recording' | 'paused' | 'stopping' | 'saved';
+export interface SettingsHistoryItem {
+  id: number;
+  key: string;
+  oldValue: string | null;
+  newValue: string;
+  changedAt: string;
+}
+
+export type RecordingStatus =
+  | 'idle'
+  | 'countdown'
+  | 'ready'
+  | 'recording'
+  | 'paused'
+  | 'stopping'
+  | 'preview';
 
 export interface RecordingStatePayload {
   status: RecordingStatus;

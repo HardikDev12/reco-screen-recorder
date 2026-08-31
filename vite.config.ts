@@ -46,7 +46,8 @@ export default defineConfig({
         main: path.resolve(__dirname, 'index.html'),
         hud: path.resolve(__dirname, 'hud.html'),
         region: path.resolve(__dirname, 'region.html'),
-        webcam: path.resolve(__dirname, 'webcam.html')
+        webcam: path.resolve(__dirname, 'webcam.html'),
+        preview: path.resolve(__dirname, 'preview.html')
       }
     }
   },

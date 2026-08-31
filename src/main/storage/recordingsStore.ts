@@ -1,7 +1,11 @@
 import { app, shell } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
-import { RecorderSettings, RecordingItem } from '../../shared/types';
+import {
+  RecorderSettings,
+  RecordingItem,
+  SettingsHistoryItem
+} from '../../shared/types';
 
 const defaultSettings: RecorderSettings = {
   outputPath: path.join(app.getPath('videos'), 'Reco'),
@@ -13,92 +17,184 @@ const defaultSettings: RecorderSettings = {
   showWebcam: false,
   hardwareAcceleration: true,
   countdownSeconds: 3,
-  highlightClicks: false
+  highlightClicks: false,
+  defaultFormat: 'mp4',
+  autoConvert: 'never'
 };
 
 const ALLOWED_EXTENSIONS = new Set(['.mp4', '.mkv', '.webm', '.mov', '.avi']);
 
+interface DatabaseSchema {
+  version: number;
+  settings: RecorderSettings;
+  settings_history: SettingsHistoryItem[];
+  recordings: RecordingItem[];
+}
+
 export class RecordingsStore {
   private configDir: string;
-  private settingsFile: string;
-  private recordingsFile: string;
+  private dbFile: string;
+  private tempDir: string;
 
   constructor() {
     this.configDir = app.getPath('userData');
-    this.settingsFile = path.join(this.configDir, 'settings.json');
-    this.recordingsFile = path.join(this.configDir, 'recordings.json');
+    this.dbFile = path.join(this.configDir, 'reco_db.json');
+    this.tempDir = path.join(app.getPath('temp'), 'reco-temp');
 
     this.ensureDirs();
+    this.runMigrations();
   }
 
   private ensureDirs(): void {
     if (!fs.existsSync(this.configDir)) {
       fs.mkdirSync(this.configDir, { recursive: true });
     }
+    if (!fs.existsSync(this.tempDir)) {
+      fs.mkdirSync(this.tempDir, { recursive: true });
+    }
     const settings = this.getSettings();
     if (!fs.existsSync(settings.outputPath)) {
-      fs.mkdirSync(settings.outputPath, { recursive: true });
+      try {
+        fs.mkdirSync(settings.outputPath, { recursive: true });
+      } catch (e) {}
+    }
+  }
+
+  public getTempDir(): string {
+    return this.tempDir;
+  }
+
+  private readDb(): DatabaseSchema {
+    try {
+      if (fs.existsSync(this.dbFile)) {
+        const raw = fs.readFileSync(this.dbFile, 'utf-8');
+        return JSON.parse(raw);
+      }
+    } catch (err) {
+      console.warn('DB read fallback:', err);
+    }
+
+    // Migrate from legacy files if they exist
+    const legacySettingsFile = path.join(this.configDir, 'settings.json');
+    const legacyRecordingsFile = path.join(this.configDir, 'recordings.json');
+
+    let migratedSettings = { ...defaultSettings };
+    let migratedRecordings: RecordingItem[] = [];
+
+    if (fs.existsSync(legacySettingsFile)) {
+      try {
+        migratedSettings = { ...defaultSettings, ...JSON.parse(fs.readFileSync(legacySettingsFile, 'utf-8')) };
+      } catch (e) {}
+    }
+    if (fs.existsSync(legacyRecordingsFile)) {
+      try {
+        migratedRecordings = JSON.parse(fs.readFileSync(legacyRecordingsFile, 'utf-8'));
+      } catch (e) {}
+    }
+
+    const initialDb: DatabaseSchema = {
+      version: 3,
+      settings: migratedSettings,
+      settings_history: [],
+      recordings: migratedRecordings
+    };
+
+    this.writeDb(initialDb);
+    return initialDb;
+  }
+
+  private writeDb(db: DatabaseSchema): void {
+    try {
+      fs.writeFileSync(this.dbFile, JSON.stringify(db, null, 2), 'utf-8');
+    } catch (err) {
+      console.error('Failed to write database:', err);
+    }
+  }
+
+  private runMigrations(): void {
+    const db = this.readDb();
+    let modified = false;
+
+    if (!db.version || db.version < 3) {
+      db.version = 3;
+      db.settings = { ...defaultSettings, ...(db.settings || {}) };
+      if (!Array.isArray(db.settings_history)) db.settings_history = [];
+      if (!Array.isArray(db.recordings)) db.recordings = [];
+      modified = true;
+    }
+
+    if (modified) {
+      this.writeDb(db);
     }
   }
 
   public getSettings(): RecorderSettings {
-    try {
-      if (fs.existsSync(this.settingsFile)) {
-        const raw = fs.readFileSync(this.settingsFile, 'utf-8');
-        return { ...defaultSettings, ...JSON.parse(raw) };
-      }
-    } catch (err) {
-      console.error('Failed to read settings, using default:', err);
-    }
-    return defaultSettings;
+    const db = this.readDb();
+    return { ...defaultSettings, ...(db.settings || {}) };
   }
 
   public saveSettings(newSettings: Partial<RecorderSettings>): RecorderSettings {
-    const updated = { ...this.getSettings(), ...newSettings };
-    try {
-      fs.writeFileSync(this.settingsFile, JSON.stringify(updated, null, 2), 'utf-8');
-      if (!fs.existsSync(updated.outputPath)) {
-        fs.mkdirSync(updated.outputPath, { recursive: true });
+    const db = this.readDb();
+    const oldSettings = db.settings || defaultSettings;
+    const updated = { ...oldSettings, ...newSettings };
+
+    // Record settings change history audit
+    for (const key of Object.keys(newSettings) as (keyof RecorderSettings)[]) {
+      const oldVal = String(oldSettings[key] ?? '');
+      const newVal = String(newSettings[key] ?? '');
+      if (oldVal !== newVal) {
+        db.settings_history.push({
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          key,
+          oldValue: oldVal,
+          newValue: newVal,
+          changedAt: new Date().toISOString()
+        });
       }
-    } catch (err) {
-      console.error('Failed to save settings:', err);
     }
+
+    db.settings = updated;
+    this.writeDb(db);
+
+    if (!fs.existsSync(updated.outputPath)) {
+      try {
+        fs.mkdirSync(updated.outputPath, { recursive: true });
+      } catch (e) {}
+    }
+
     return updated;
+  }
+
+  public resetDefaultOutputPath(): string {
+    const defaultPath = path.join(app.getPath('videos'), 'Reco');
+    this.saveSettings({ outputPath: defaultPath });
+    return defaultPath;
   }
 
   public getRecordings(): RecordingItem[] {
-    try {
-      if (fs.existsSync(this.recordingsFile)) {
-        const raw = fs.readFileSync(this.recordingsFile, 'utf-8');
-        const items: RecordingItem[] = JSON.parse(raw);
-        // Verify files still exist on disk and have valid video extension
-        return items.filter(
-          (item) =>
-            typeof item.filePath === 'string' &&
-            ALLOWED_EXTENSIONS.has(path.extname(item.filePath).toLowerCase()) &&
-            fs.existsSync(item.filePath)
-        );
-      }
-    } catch (err) {
-      console.error('Failed to read recordings list:', err);
-    }
-    return [];
+    const db = this.readDb();
+    const items = db.recordings || [];
+    return items.filter(
+      (item) =>
+        typeof item.filePath === 'string' &&
+        ALLOWED_EXTENSIONS.has(path.extname(item.filePath).toLowerCase()) &&
+        fs.existsSync(item.filePath)
+    );
   }
 
   public addRecording(item: RecordingItem): RecordingItem[] {
-    const current = this.getRecordings();
-    const updated = [item, ...current.filter((r) => r.id !== item.id)];
-    try {
-      fs.writeFileSync(this.recordingsFile, JSON.stringify(updated, null, 2), 'utf-8');
-    } catch (err) {
-      console.error('Failed to save recording history:', err);
-    }
-    return updated;
+    const db = this.readDb();
+    const current = db.recordings || [];
+    db.recordings = [item, ...current.filter((r) => r.id !== item.id)];
+    this.writeDb(db);
+    return db.recordings;
   }
 
   public deleteRecording(id: string): { success: boolean; recordings: RecordingItem[] } {
-    const current = this.getRecordings();
+    const db = this.readDb();
+    const current = db.recordings || [];
     const target = current.find((r) => r.id === id);
+
     if (
       target &&
       typeof target.filePath === 'string' &&
@@ -111,13 +207,62 @@ export class RecordingsStore {
         console.error('Failed to delete file on disk:', err);
       }
     }
-    const updated = current.filter((r) => r.id !== id);
-    try {
-      fs.writeFileSync(this.recordingsFile, JSON.stringify(updated, null, 2), 'utf-8');
-    } catch (err) {
-      console.error('Failed to update recordings list after deletion:', err);
+
+    db.recordings = current.filter((r) => r.id !== id);
+    this.writeDb(db);
+    return { success: true, recordings: db.recordings };
+  }
+
+  public commitTempRecording(tempPath: string, customDestPath?: string): RecordingItem | null {
+    if (!fs.existsSync(tempPath)) return null;
+
+    const settings = this.getSettings();
+    const targetDir = customDestPath ? path.dirname(customDestPath) : settings.outputPath;
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
     }
-    return { success: true, recordings: updated };
+
+    const finalPath = customDestPath || path.join(targetDir, path.basename(tempPath).replace(/^temp_/, ''));
+
+    try {
+      if (tempPath !== finalPath) {
+        fs.copyFileSync(tempPath, finalPath);
+        try {
+          fs.unlinkSync(tempPath);
+        } catch (e) {}
+      }
+
+      const stats = fs.statSync(finalPath);
+      const newItem: RecordingItem = {
+        id: `rec_${Date.now()}`,
+        filePath: finalPath,
+        fileName: path.basename(finalPath),
+        duration: 0, // Updated by caller or ffmpeg
+        fileSize: stats.size,
+        timestamp: Date.now(),
+        resolution: 'Custom Region',
+        fps: settings.framerate || 60,
+        format: path.extname(finalPath).replace('.', '').toUpperCase()
+      };
+
+      this.addRecording(newItem);
+      return newItem;
+    } catch (err) {
+      console.error('Failed to commit temporary recording:', err);
+      return null;
+    }
+  }
+
+  public discardTempRecording(tempPath: string): boolean {
+    if (fs.existsSync(tempPath)) {
+      try {
+        fs.unlinkSync(tempPath);
+        return true;
+      } catch (err) {
+        console.error('Failed to discard temp recording:', err);
+      }
+    }
+    return false;
   }
 
   public openRecordingInFolder(filePath: string): void {

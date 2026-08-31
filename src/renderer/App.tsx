@@ -16,15 +16,34 @@ import {
   Scale,
   FileText,
   Lock,
-  ExternalLink
+  ExternalLink,
+  RotateCcw,
+  Sparkles,
+  Layers,
+  Mic,
+  Volume2,
+  Monitor,
+  Keyboard,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
-import { RecorderSettings, RecordingItem, SystemHardwareInfo, EncoderChoice } from '../shared/types';
+import {
+  RecorderSettings,
+  RecordingItem,
+  SystemHardwareInfo,
+  EncoderChoice,
+  CountdownChoice,
+  OutputFormatChoice
+} from '../shared/types';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'library' | 'settings' | 'about'>('library');
+  const [activeMainTab, setActiveMainTab] = useState<'library' | 'settings' | 'about'>('library');
+  const [activeSettingsSection, setActiveSettingsSection] = useState<'general' | 'audio' | 'gpu' | 'storage' | 'shortcuts'>('general');
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
   const [hwInfo, setHwInfo] = useState<SystemHardwareInfo | null>(null);
-  const [selectedLegalDoc, setSelectedLegalDoc] = useState<'license' | 'thirdparty' | 'privacy' | 'terms' | 'disclaimer' | null>(null);
+  const [selectedLegalDoc, setSelectedLegalDoc] = useState<'license' | 'thirdparty' | 'privacy' | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
   const [settings, setSettings] = useState<RecorderSettings>({
     outputPath: '',
     framerate: 60,
@@ -34,8 +53,10 @@ export const App: React.FC = () => {
     captureSystemAudio: true,
     showWebcam: false,
     hardwareAcceleration: true,
-    countdownSeconds: 0,
-    highlightClicks: false
+    countdownSeconds: 3,
+    highlightClicks: false,
+    defaultFormat: 'mp4',
+    autoConvert: 'never'
   });
 
   const loadData = async () => {
@@ -51,7 +72,7 @@ export const App: React.FC = () => {
     loadData();
 
     const unsubView = window.electronAPI.onDashboardView((view) => {
-      setActiveTab(view);
+      setActiveMainTab(view);
       loadData();
     });
 
@@ -77,10 +98,22 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleResetDirectory = async () => {
+    const defaultPath = await (window.electronAPI as any).resetDefaultSaveLocation?.();
+    if (defaultPath) {
+      setSettings((prev) => ({ ...prev, outputPath: defaultPath }));
+    }
+  };
+
+  const handleOpenDirectory = async () => {
+    await (window.electronAPI as any).openSaveLocationFolder?.();
+  };
+
   const handleDeleteRecording = async (id: string) => {
     const res = await window.electronAPI.deleteRecording(id);
     if (res.success) {
       setRecordings(res.recordings);
+      setDeleteTargetId(null);
     }
   };
 
@@ -105,16 +138,16 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#0b0f17] text-slate-100 select-none overflow-hidden font-sans">
-      {/* Top Header */}
-      <header className="h-16 px-8 border-b border-white/5 flex items-center justify-between bg-slate-950/60 backdrop-blur-md app-draggable shrink-0">
+    <div className="flex flex-col h-screen w-screen bg-[#090d16] text-slate-100 select-none overflow-hidden font-sans">
+      {/* Top Header Bar with Clean Optical Tab Navigation */}
+      <header className="h-16 px-6 border-b border-white/10 flex items-center justify-between bg-slate-950/80 backdrop-blur-md app-draggable shrink-0">
         <div className="flex items-center gap-3.5 app-no-drag">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-rose-500 flex items-center justify-center shadow-lg shadow-indigo-600/30">
             <Video className="w-5 h-5 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
+              <span className="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
                 Reco
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 font-bold border border-rose-500/20">
@@ -125,68 +158,73 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex bg-slate-900/80 p-1 rounded-2xl border border-white/5 app-no-drag">
+        {/* Fixed Header Navigation Tabs */}
+        <div className="flex items-center gap-1 bg-slate-900/90 p-1.5 rounded-2xl border border-white/10 app-no-drag">
           <button
-            onClick={() => setActiveTab('library')}
+            onClick={() => setActiveMainTab('library')}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTab === 'library'
+              activeMainTab === 'library'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
             <Film className="w-4 h-4" />
-            Recordings ({recordings.length})
+            <span>Library ({recordings.length})</span>
           </button>
+
           <button
-            onClick={() => setActiveTab('settings')}
+            onClick={() => setActiveMainTab('settings')}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTab === 'settings'
+              activeMainTab === 'settings'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
             <Settings className="w-4 h-4" />
-            Preferences
+            <span>Preferences</span>
           </button>
+
           <button
-            onClick={() => setActiveTab('about')}
+            onClick={() => setActiveMainTab('about')}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTab === 'about'
+              activeMainTab === 'about'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
             <Info className="w-4 h-4" />
-            About & Legal
+            <span>About & Legal</span>
           </button>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-8 overflow-y-auto">
-        {activeTab === 'library' && (
-          <div className="max-w-4xl mx-auto space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/5">
+      <main className="flex-1 overflow-hidden flex flex-col">
+        {/* 1. SEPARATE RECORDINGS LIBRARY VIEW */}
+        {activeMainTab === 'library' && (
+          <div className="flex-1 p-6 overflow-y-auto max-w-5xl mx-auto w-full space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div>
-                <h1 className="text-xl font-bold text-white">Captured Videos</h1>
-                <p className="text-xs text-slate-400">Instant playback and file location management</p>
+                <h1 className="text-lg font-bold text-white tracking-tight">Recordings History</h1>
+                <p className="text-xs text-slate-400">Review, play, open in explorer, and manage your captured clips</p>
               </div>
               <button
-                onClick={() => handleSelectDirectory()}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 hover:text-white transition border border-white/5"
+                onClick={handleOpenDirectory}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 hover:text-white transition border border-white/10"
               >
                 <Folder className="w-4 h-4 text-indigo-400" />
-                Change Save Folder
+                Open Videos Folder
               </button>
             </div>
 
             {recordings.length === 0 ? (
               <div className="py-24 flex flex-col items-center justify-center text-slate-500">
-                <Film className="w-16 h-16 mb-4 stroke-1 text-slate-600" />
-                <p className="text-base font-semibold text-slate-300">No recordings yet</p>
-                <p className="text-xs text-slate-500 mt-1">
-                  Use the transparent overlay frame on your desktop to record videos.
+                <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
+                  <Film className="w-8 h-8 stroke-1 text-slate-400" />
+                </div>
+                <p className="text-base font-bold text-slate-200">No recordings yet</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm text-center">
+                  Your completed recordings will appear here after previewing and saving them.
                 </p>
               </div>
             ) : (
@@ -194,13 +232,13 @@ export const App: React.FC = () => {
                 {recordings.map((rec) => (
                   <div
                     key={rec.id}
-                    className="glass-panel rounded-2xl p-4 flex items-center justify-between gap-4 border border-white/5 hover:border-white/15 transition group"
+                    className="glass-panel rounded-2xl p-4 flex items-center justify-between gap-4 border border-white/10 hover:border-white/20 transition group bg-slate-900/60"
                   >
                     <div className="flex items-center gap-4 min-w-0">
                       <button
                         onClick={() => window.electronAPI.playRecording(rec.filePath)}
                         className="w-12 h-12 rounded-xl bg-indigo-600/20 group-hover:bg-indigo-600 text-indigo-400 group-hover:text-white flex items-center justify-center transition shadow-sm shrink-0"
-                        title="Play in Default Player"
+                        title="Play Video"
                       >
                         <Play className="w-5 h-5 fill-current ml-0.5" />
                       </button>
@@ -231,14 +269,14 @@ export const App: React.FC = () => {
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => window.electronAPI.openRecordingInFolder(rec.filePath)}
-                        className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition border border-white/5"
+                        className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition border border-white/10"
                         title="Show in File Explorer"
                       >
                         <Folder className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteRecording(rec.id)}
-                        className="p-2.5 rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition border border-white/5"
+                        onClick={() => setDeleteTargetId(rec.id)}
+                        className="p-2.5 rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition border border-white/10"
                         title="Delete Video"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -251,90 +289,315 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'settings' && (
-          <div className="max-w-3xl mx-auto space-y-6">
-            <div className="pb-3 border-b border-white/5">
-              <h1 className="text-xl font-bold text-white">Recording Preferences</h1>
-              <p className="text-xs text-slate-400">Configure framerate, encoding engine, and storage directory</p>
-            </div>
+        {/* 2. EXPANDED MULTI-SECTION SETTINGS VIEW */}
+        {activeMainTab === 'settings' && (
+          <div className="flex-1 flex overflow-hidden max-w-5xl mx-auto w-full">
+            {/* Left Sidebar Sub-Navigation */}
+            <aside className="w-56 p-5 border-r border-white/10 space-y-1.5 shrink-0">
+              <button
+                onClick={() => setActiveSettingsSection('general')}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                  activeSettingsSection === 'general'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Monitor className="w-4 h-4" />
+                <span>Recording & Timer</span>
+              </button>
 
-            {/* Framerate & Resolution */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="glass-panel p-5 rounded-2xl border border-white/10">
-                <label className="text-xs font-bold text-slate-300 block mb-3">Target Framerate</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[60, 30].map((fps) => (
-                    <button
-                      key={fps}
-                      onClick={() => handleUpdateSettings({ framerate: fps as 30 | 60 })}
-                      className={`py-3 rounded-xl text-xs font-bold border transition ${
-                        settings.framerate === fps
-                          ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/30'
-                          : 'bg-slate-900/60 border-white/10 text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      {fps} FPS {fps === 60 ? '⚡ Ultra' : 'Standard'}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <button
+                onClick={() => setActiveSettingsSection('audio')}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                  activeSettingsSection === 'audio'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Mic className="w-4 h-4" />
+                <span>Audio Devices</span>
+              </button>
 
-              <div className="glass-panel p-5 rounded-2xl border border-white/10">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <Cpu className="w-4 h-4 text-indigo-400" />
-                    GPU Encoder
-                  </label>
-                  {hwInfo && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
-                      {hwInfo.hasNvidia ? 'NVENC Active' : hwInfo.hasAmd ? 'AMF Active' : 'x264'}
-                    </span>
-                  )}
-                </div>
+              <button
+                onClick={() => setActiveSettingsSection('gpu')}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                  activeSettingsSection === 'gpu'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Cpu className="w-4 h-4" />
+                <span>GPU & Encoding</span>
+              </button>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'auto', name: 'Auto GPU' },
-                    { id: 'x264', name: 'Software (CPU)' }
-                  ].map((enc) => (
-                    <button
-                      key={enc.id}
-                      onClick={() => handleUpdateSettings({ encoder: enc.id as EncoderChoice })}
-                      className={`py-3 rounded-xl text-xs font-bold border transition ${
-                        settings.encoder === enc.id
-                          ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/30'
-                          : 'bg-slate-900/60 border-white/10 text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      {enc.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+              <button
+                onClick={() => setActiveSettingsSection('storage')}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                  activeSettingsSection === 'storage'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Folder className="w-4 h-4" />
+                <span>Storage & Export</span>
+              </button>
 
-            {/* Save Directory */}
-            <div className="glass-panel p-5 rounded-2xl border border-white/10">
-              <label className="text-xs font-bold text-slate-300 block mb-3">Save Destination Folder</label>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 bg-slate-900/90 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-300 font-mono truncate">
-                  {settings.outputPath}
+              <button
+                onClick={() => setActiveSettingsSection('shortcuts')}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                  activeSettingsSection === 'shortcuts'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Keyboard className="w-4 h-4" />
+                <span>Shortcuts</span>
+              </button>
+            </aside>
+
+            {/* Right Settings Content Panels */}
+            <div className="flex-1 p-6 overflow-y-auto space-y-6">
+              {activeSettingsSection === 'general' && (
+                <div className="space-y-6">
+                  <div className="pb-3 border-b border-white/10">
+                    <h2 className="text-base font-bold text-white">Recording & Countdown</h2>
+                    <p className="text-xs text-slate-400">Configure pre-recording countdown and framerate</p>
+                  </div>
+
+                  {/* Pre-recording Countdown Setting */}
+                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-3">
+                    <label className="text-xs font-bold text-slate-200 block">Pre-Recording Countdown</label>
+                    <p className="text-xs text-slate-400">
+                      Shows a visual 3-2-1 overlay and waits on the GO screen before actual recording begins.
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 pt-1">
+                      {[
+                        { val: 0, label: 'Off (Direct GO)' },
+                        { val: 3, label: '3 Seconds (Default)' },
+                        { val: 5, label: '5 Seconds' }
+                      ].map((item) => (
+                        <button
+                          key={item.val}
+                          onClick={() => handleUpdateSettings({ countdownSeconds: item.val as CountdownChoice })}
+                          className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition ${
+                            settings.countdownSeconds === item.val
+                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30'
+                              : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Target Framerate */}
+                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-3">
+                    <label className="text-xs font-bold text-slate-200 block">Target Framerate</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[60, 30].map((fps) => (
+                        <button
+                          key={fps}
+                          onClick={() => handleUpdateSettings({ framerate: fps as 30 | 60 })}
+                          className={`py-3 rounded-xl text-xs font-bold border transition ${
+                            settings.framerate === fps
+                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30'
+                              : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {fps} FPS {fps === 60 ? '⚡ Ultra Smooth' : 'Standard'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <button
-                  onClick={handleSelectDirectory}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md shadow-indigo-600/30 shrink-0"
-                >
-                  <Folder className="w-4 h-4" />
-                  Browse
-                </button>
-              </div>
+              )}
+
+              {activeSettingsSection === 'audio' && (
+                <div className="space-y-6">
+                  <div className="pb-3 border-b border-white/10">
+                    <h2 className="text-base font-bold text-white">Audio Capture Devices</h2>
+                    <p className="text-xs text-slate-400">Manage microphone input and system sound loopback</p>
+                  </div>
+
+                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-slate-200">Record Microphone Input</p>
+                        <p className="text-xs text-slate-400">Captures external voice over 48kHz audio graph</p>
+                      </div>
+                      <button
+                        onClick={() => handleUpdateSettings({ captureMicrophone: !settings.captureMicrophone })}
+                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition border ${
+                          settings.captureMicrophone
+                            ? 'bg-emerald-600 border-emerald-500 text-white'
+                            : 'bg-slate-800 border-white/10 text-slate-400'
+                        }`}
+                      >
+                        {settings.captureMicrophone ? 'Enabled' : 'Muted'}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                      <div>
+                        <p className="text-xs font-bold text-slate-200">Record System Sound (Loopback)</p>
+                        <p className="text-xs text-slate-400">Captures desktop applications, games, and browser audio</p>
+                      </div>
+                      <button
+                        onClick={() => handleUpdateSettings({ captureSystemAudio: !settings.captureSystemAudio })}
+                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition border ${
+                          settings.captureSystemAudio
+                            ? 'bg-emerald-600 border-emerald-500 text-white'
+                            : 'bg-slate-800 border-white/10 text-slate-400'
+                        }`}
+                      >
+                        {settings.captureSystemAudio ? 'Enabled' : 'Muted'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeSettingsSection === 'gpu' && (
+                <div className="space-y-6">
+                  <div className="pb-3 border-b border-white/10">
+                    <h2 className="text-base font-bold text-white">GPU & Hardware Encoding</h2>
+                    <p className="text-xs text-slate-400">Hardware acceleration and encoder engine configuration</p>
+                  </div>
+
+                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                        <Cpu className="w-4 h-4 text-indigo-400" />
+                        Hardware Encoder
+                      </label>
+                      {hwInfo && (
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
+                          {hwInfo.hasNvidia ? 'NVENC Active' : hwInfo.hasAmd ? 'AMF Active' : 'x264 Active'}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'auto', name: 'Auto GPU (Recommended)' },
+                        { id: 'x264', name: 'Software (CPU x264)' }
+                      ].map((enc) => (
+                        <button
+                          key={enc.id}
+                          onClick={() => handleUpdateSettings({ encoder: enc.id as EncoderChoice })}
+                          className={`py-3 rounded-xl text-xs font-bold border transition ${
+                            settings.encoder === enc.id
+                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30'
+                              : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {enc.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeSettingsSection === 'storage' && (
+                <div className="space-y-6">
+                  <div className="pb-3 border-b border-white/10">
+                    <h2 className="text-base font-bold text-white">Storage & Export</h2>
+                    <p className="text-xs text-slate-400">Default save location and recording output format</p>
+                  </div>
+
+                  {/* Default Save Directory */}
+                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-3">
+                    <label className="text-xs font-bold text-slate-200 block">Default Save Destination</label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-slate-950/80 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-300 font-mono truncate">
+                        {settings.outputPath}
+                      </div>
+                      <button
+                        onClick={handleSelectDirectory}
+                        className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-sm shrink-0"
+                      >
+                        Change
+                      </button>
+                      <button
+                        onClick={handleResetDirectory}
+                        className="px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold transition border border-white/10 shrink-0"
+                        title="Reset to default (%USERPROFILE%\Videos\Reco)"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Default Format */}
+                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-3">
+                    <label className="text-xs font-bold text-slate-200 block">Default Video Container Format</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['mp4', 'mkv', 'webm'] as OutputFormatChoice[]).map((fmt) => (
+                        <button
+                          key={fmt}
+                          onClick={() => handleUpdateSettings({ defaultFormat: fmt })}
+                          className={`py-2.5 rounded-xl text-xs font-bold uppercase border transition ${
+                            settings.defaultFormat === fmt
+                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30'
+                              : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {fmt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeSettingsSection === 'shortcuts' && (
+                <div className="space-y-6">
+                  <div className="pb-3 border-b border-white/10">
+                    <h2 className="text-base font-bold text-white">Keyboard Shortcuts</h2>
+                    <p className="text-xs text-slate-400">Global system-wide hotkeys and local controls</p>
+                  </div>
+
+                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 divide-y divide-white/5">
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="text-xs text-slate-300 font-medium">Record / Stop / Confirm GO</span>
+                      <kbd className="px-2.5 py-1 rounded-lg bg-slate-950 border border-white/15 text-xs font-mono font-bold text-indigo-300">
+                        Ctrl + Shift + R
+                      </kbd>
+                    </div>
+
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="text-xs text-slate-300 font-medium">Pause / Resume Recording</span>
+                      <kbd className="px-2.5 py-1 rounded-lg bg-slate-950 border border-white/15 text-xs font-mono font-bold text-amber-300">
+                        Ctrl + Shift + P
+                      </kbd>
+                    </div>
+
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="text-xs text-slate-300 font-medium">Cancel Countdown / Cancel GO</span>
+                      <kbd className="px-2.5 py-1 rounded-lg bg-slate-950 border border-white/15 text-xs font-mono font-bold text-rose-300">
+                        Esc
+                      </kbd>
+                    </div>
+
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="text-xs text-slate-300 font-medium">Preview Play / Pause</span>
+                      <kbd className="px-2.5 py-1 rounded-lg bg-slate-950 border border-white/15 text-xs font-mono font-bold text-emerald-300">
+                        Space
+                      </kbd>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {activeTab === 'about' && (
-          <div className="max-w-3xl mx-auto space-y-6">
-            <div className="glass-panel p-6 rounded-3xl border border-white/10 text-center relative overflow-hidden">
+        {/* 3. ABOUT & LEGAL VIEW */}
+        {activeMainTab === 'about' && (
+          <div className="flex-1 p-6 overflow-y-auto max-w-3xl mx-auto w-full space-y-6">
+            <div className="glass-panel p-6 rounded-3xl border border-white/10 text-center relative overflow-hidden bg-slate-900/50">
               <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-rose-500 flex items-center justify-center shadow-xl shadow-indigo-600/30 mb-4">
                 <Video className="w-8 h-8 text-white" />
               </div>
@@ -346,14 +609,13 @@ export const App: React.FC = () => {
               </p>
             </div>
 
-            {/* Offline Legal Nav Buttons */}
             <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => setSelectedLegalDoc(selectedLegalDoc === 'license' ? null : 'license')}
                 className={`p-4 rounded-2xl border text-left transition ${
                   selectedLegalDoc === 'license'
                     ? 'bg-indigo-600/20 border-indigo-500 text-white'
-                    : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white hover:border-white/20'
+                    : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white'
                 }`}
               >
                 <Scale className="w-5 h-5 text-indigo-400 mb-2" />
@@ -366,7 +628,7 @@ export const App: React.FC = () => {
                 className={`p-4 rounded-2xl border text-left transition ${
                   selectedLegalDoc === 'thirdparty'
                     ? 'bg-indigo-600/20 border-indigo-500 text-white'
-                    : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white hover:border-white/20'
+                    : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white'
                 }`}
               >
                 <FileText className="w-5 h-5 text-indigo-400 mb-2" />
@@ -379,7 +641,7 @@ export const App: React.FC = () => {
                 className={`p-4 rounded-2xl border text-left transition ${
                   selectedLegalDoc === 'privacy'
                     ? 'bg-indigo-600/20 border-indigo-500 text-white'
-                    : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white hover:border-white/20'
+                    : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white'
                 }`}
               >
                 <Lock className="w-5 h-5 text-emerald-400 mb-2" />
@@ -388,9 +650,8 @@ export const App: React.FC = () => {
               </button>
             </div>
 
-            {/* In-App Offline Document Viewer */}
             {selectedLegalDoc && (
-              <div className="glass-panel p-6 rounded-2xl border border-white/15 max-h-96 overflow-y-auto text-xs text-slate-300 font-sans leading-relaxed space-y-3">
+              <div className="glass-panel p-6 rounded-2xl border border-white/15 max-h-80 overflow-y-auto text-xs text-slate-300 font-sans leading-relaxed space-y-3 bg-slate-950/70">
                 {selectedLegalDoc === 'license' && (
                   <div>
                     <h3 className="text-sm font-bold text-white mb-2">MIT License</h3>
@@ -400,17 +661,7 @@ export const App: React.FC = () => {
                       of this software and associated documentation files (the "Software"), to deal
                       in the Software without restriction, including without limitation the rights
                       to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-                      copies of the Software, and to permit persons to whom the Software is
-                      furnished to do so, subject to the following conditions:<br /><br />
-                      The above copyright notice and this permission notice shall be included in all
-                      copies or substantial portions of the Software.<br /><br />
-                      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-                      IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-                      FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-                      AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-                      LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-                      OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-                      SOFTWARE.
+                      copies of the Software...
                     </p>
                   </div>
                 )}
@@ -418,13 +669,12 @@ export const App: React.FC = () => {
                 {selectedLegalDoc === 'thirdparty' && (
                   <div>
                     <h3 className="text-sm font-bold text-white mb-2">Third-Party Software Attribution</h3>
-                    <ul className="space-y-2 text-slate-300">
+                    <ul className="space-y-1.5 text-slate-300">
                       <li>• <strong>Electron & Chromium</strong> — OpenJS Foundation / Google LLC (MIT / BSD)</li>
                       <li>• <strong>React 19 & React DOM</strong> — Meta Platforms, Inc. (MIT)</li>
-                      <li>• <strong>FFmpeg & FFprobe</strong> — FFmpeg developers / Fabrice Bellard (GPL v3 / LGPL v2.1+)</li>
+                      <li>• <strong>FFmpeg & FFprobe</strong> — FFmpeg developers (GPL v3 / LGPL v2.1+)</li>
                       <li>• <strong>Lucide Icons</strong> — Lucide Contributors (ISC)</li>
                       <li>• <strong>Tailwind CSS</strong> — Tailwind Labs, Inc. (MIT)</li>
-                      <li>• <strong>Plus Jakarta Sans</strong> — Tokotype (SIL Open Font License 1.1)</li>
                       <li>• <strong>Vite</strong> — Evan You & Vite Contributors (MIT)</li>
                     </ul>
                   </div>
@@ -433,9 +683,8 @@ export const App: React.FC = () => {
                 {selectedLegalDoc === 'privacy' && (
                   <div>
                     <h3 className="text-sm font-bold text-white mb-2">Privacy & Offline Data Guarantee</h3>
-                    <p>• <strong>Zero Cloud Uploads</strong>: All screen recordings and audio are processed exclusively on your local computer and saved to your personal storage directory.</p>
-                    <p>• <strong>Zero Telemetry</strong>: RECO contains no analytics probes, user tracking, or advertising SDKs.</p>
-                    <p>• <strong>Offline Operational Mode</strong>: The application requires zero internet connectivity to function.</p>
+                    <p>• <strong>Zero Cloud Uploads</strong>: All recordings and audio are processed exclusively on your local computer.</p>
+                    <p>• <strong>Zero Telemetry</strong>: RECO contains no analytics probes or tracking SDKs.</p>
                   </div>
                 )}
               </div>
@@ -443,6 +692,40 @@ export const App: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTargetId && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-white/15 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div>
+              <h3 className="text-base font-bold text-white">Delete Recording?</h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                This recording file will be permanently removed from your computer.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setDeleteTargetId(null)}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition border border-white/5"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() => handleDeleteRecording(deleteTargetId)}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-md shadow-rose-600/30"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
