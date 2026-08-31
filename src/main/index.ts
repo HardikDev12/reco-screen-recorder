@@ -22,13 +22,14 @@ if (!gotTheLock) {
   app.on('second-instance', () => {
     const frame = windowManager.getFrameWindow();
     const toolbar = windowManager.getToolbarWindow();
-    if (frame && !frame.isDestroyed()) {
-      if (frame.isMinimized()) frame.restore();
-      frame.focus();
-    }
     if (toolbar && !toolbar.isDestroyed()) {
       if (toolbar.isMinimized()) toolbar.restore();
+      toolbar.show();
       toolbar.focus();
+    }
+    if (frame && !frame.isDestroyed()) {
+      frame.show();
+      frame.setAlwaysOnTop(true);
     }
   });
 
@@ -80,10 +81,10 @@ if (!gotTheLock) {
 
   // Minimize / Exit
   ipcMain.on('app:minimize', () => {
-    const toolbar = windowManager.getToolbarWindow();
     const frame = windowManager.getFrameWindow();
+    const toolbar = windowManager.getToolbarWindow();
+    if (frame && !frame.isDestroyed()) frame.hide();
     if (toolbar && !toolbar.isDestroyed()) toolbar.minimize();
-    if (frame && !frame.isDestroyed()) frame.minimize();
   });
 
   ipcMain.on('app:quit', () => {

@@ -35,8 +35,9 @@ export class WindowManager {
 
   // 1. Independent Recording Frame Window
   public createRecordingFrameWindow(): BrowserWindow {
-    if (this.frameWindow) {
+    if (this.frameWindow && !this.frameWindow.isDestroyed()) {
       this.frameWindow.show();
+      this.frameWindow.setAlwaysOnTop(true);
       return this.frameWindow;
     }
 
@@ -112,8 +113,9 @@ export class WindowManager {
 
   // 2. Compact Floating Control Toolbar Window
   public createFloatingToolbarWindow(): BrowserWindow {
-    if (this.toolbarWindow) {
+    if (this.toolbarWindow && !this.toolbarWindow.isDestroyed()) {
       this.toolbarWindow.show();
+      this.toolbarWindow.focus();
       return this.toolbarWindow;
     }
 
@@ -150,6 +152,34 @@ export class WindowManager {
       this.toolbarWindow.setContentProtection(true);
     } catch (err) {}
 
+    // Link frame visibility seamlessly with toolbar minimize/restore/focus lifecycle
+    this.toolbarWindow.on('minimize', () => {
+      if (this.frameWindow && !this.frameWindow.isDestroyed()) {
+        this.frameWindow.hide();
+      }
+    });
+
+    this.toolbarWindow.on('restore', () => {
+      if (this.frameWindow && !this.frameWindow.isDestroyed()) {
+        this.frameWindow.show();
+        this.frameWindow.setAlwaysOnTop(true);
+      }
+    });
+
+    this.toolbarWindow.on('show', () => {
+      if (this.frameWindow && !this.frameWindow.isDestroyed() && !this.toolbarWindow?.isMinimized()) {
+        this.frameWindow.show();
+        this.frameWindow.setAlwaysOnTop(true);
+      }
+    });
+
+    this.toolbarWindow.on('focus', () => {
+      if (this.frameWindow && !this.frameWindow.isDestroyed() && !this.toolbarWindow?.isMinimized()) {
+        this.frameWindow.show();
+        this.frameWindow.setAlwaysOnTop(true);
+      }
+    });
+
     if (process.env.VITE_DEV_SERVER_URL) {
       this.toolbarWindow.loadURL(`${process.env.VITE_DEV_SERVER_URL}/toolbar.html`);
     } else {
@@ -181,7 +211,7 @@ export class WindowManager {
   }
 
   public openDashboardWindow(view: 'library' | 'settings' = 'library'): BrowserWindow {
-    if (this.dashboardWindow) {
+    if (this.dashboardWindow && !this.dashboardWindow.isDestroyed()) {
       this.dashboardWindow.show();
       this.dashboardWindow.focus();
       this.dashboardWindow.webContents.send('dashboard:view', view);
@@ -223,7 +253,7 @@ export class WindowManager {
   }
 
   public createWebcamOverlay(): BrowserWindow {
-    if (this.webcamWindow) {
+    if (this.webcamWindow && !this.webcamWindow.isDestroyed()) {
       this.webcamWindow.show();
       return this.webcamWindow;
     }
@@ -274,26 +304,26 @@ export class WindowManager {
   }
 
   public closeWebcamOverlay(): void {
-    if (this.webcamWindow) {
+    if (this.webcamWindow && !this.webcamWindow.isDestroyed()) {
       this.webcamWindow.close();
       this.webcamWindow = null;
     }
   }
 
   public closeAllAuxiliaryWindows(): void {
-    if (this.frameWindow) {
+    if (this.frameWindow && !this.frameWindow.isDestroyed()) {
       this.frameWindow.close();
       this.frameWindow = null;
     }
-    if (this.toolbarWindow) {
+    if (this.toolbarWindow && !this.toolbarWindow.isDestroyed()) {
       this.toolbarWindow.close();
       this.toolbarWindow = null;
     }
-    if (this.dashboardWindow) {
+    if (this.dashboardWindow && !this.dashboardWindow.isDestroyed()) {
       this.dashboardWindow.close();
       this.dashboardWindow = null;
     }
-    if (this.webcamWindow) {
+    if (this.webcamWindow && !this.webcamWindow.isDestroyed()) {
       this.webcamWindow.close();
       this.webcamWindow = null;
     }
