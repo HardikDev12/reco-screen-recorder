@@ -139,147 +139,150 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-[#090d16] text-slate-100 select-none overflow-hidden font-sans">
-      {/* Top Header Bar with Clean Optical Tab Navigation */}
-      <header className="h-16 px-6 border-b border-white/10 flex items-center justify-between bg-slate-950/80 backdrop-blur-md app-draggable shrink-0">
-        <div className="flex items-center gap-3.5 app-no-drag">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-rose-500 flex items-center justify-center shadow-lg shadow-indigo-600/30">
-            <Video className="w-5 h-5 text-white" />
+      {/* Top Header Bar with Clean Proportional Spacing */}
+      <header className="h-16 px-6 border-b border-white/10 flex items-center justify-between bg-slate-950/80 backdrop-blur-md app-draggable shrink-0 gap-4">
+        {/* Left Branding */}
+        <div className="flex items-center gap-3 app-no-drag shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-rose-500 flex items-center justify-center shadow-md shadow-indigo-600/30">
+            <Video className="w-4 h-4 text-white" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
                 Reco
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 font-bold border border-rose-500/20">
+              <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-400 font-bold border border-rose-500/20">
                 MANAGER
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">by Hardik Prajapati</p>
+            <p className="text-[10px] text-slate-400 leading-none mt-0.5">by Hardik Prajapati</p>
           </div>
         </div>
 
-        {/* Fixed Header Navigation Tabs */}
-        <div className="flex items-center gap-1 bg-slate-900/90 p-1.5 rounded-2xl border border-white/10 app-no-drag">
+        {/* Right Navigation Tabs */}
+        <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-white/10 app-no-drag shrink-0">
           <button
             onClick={() => setActiveMainTab('library')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
               activeMainTab === 'library'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <Film className="w-4 h-4" />
+            <Film className="w-3.5 h-3.5" />
             <span>Library ({recordings.length})</span>
           </button>
 
           <button
             onClick={() => setActiveMainTab('settings')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
               activeMainTab === 'settings'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="w-3.5 h-3.5" />
             <span>Preferences</span>
           </button>
 
           <button
             onClick={() => setActiveMainTab('about')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
               activeMainTab === 'about'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <Info className="w-4 h-4" />
+            <Info className="w-3.5 h-3.5" />
             <span>About & Legal</span>
           </button>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-hidden flex flex-col">
-        {/* 1. SEPARATE RECORDINGS LIBRARY VIEW */}
+      <main className="flex-1 overflow-hidden flex flex-col min-h-0">
+        {/* 1. RECORDINGS LIBRARY VIEW */}
         {activeMainTab === 'library' && (
-          <div className="flex-1 p-6 overflow-y-auto max-w-5xl mx-auto w-full space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="flex-1 p-6 overflow-y-auto max-w-4xl mx-auto w-full space-y-4">
+            {/* View Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 gap-3">
               <div>
-                <h1 className="text-lg font-bold text-white tracking-tight">Recordings History</h1>
-                <p className="text-xs text-slate-400">Review, play, open in explorer, and manage your captured clips</p>
+                <h1 className="text-base font-bold text-white tracking-tight">Recordings History</h1>
+                <p className="text-xs text-slate-400 mt-0.5">Review, play, open in explorer, and manage your captured clips</p>
               </div>
               <button
                 onClick={handleOpenDirectory}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 hover:text-white transition border border-white/10"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 hover:text-white transition border border-white/10 shrink-0"
               >
-                <Folder className="w-4 h-4 text-indigo-400" />
-                Open Videos Folder
+                <Folder className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Open Folder</span>
               </button>
             </div>
 
+            {/* Recordings List */}
             {recordings.length === 0 ? (
-              <div className="py-24 flex flex-col items-center justify-center text-slate-500">
-                <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
-                  <Film className="w-8 h-8 stroke-1 text-slate-400" />
+              <div className="py-20 flex flex-col items-center justify-center text-slate-500">
+                <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+                  <Film className="w-7 h-7 stroke-1 text-slate-400" />
                 </div>
-                <p className="text-base font-bold text-slate-200">No recordings yet</p>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm text-center">
-                  Your completed recordings will appear here after previewing and saving them.
+                <p className="text-sm font-bold text-slate-200">No recordings yet</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-xs text-center">
+                  Your completed recordings will appear here after previewing and saving.
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3">
+              <div className="space-y-2.5">
                 {recordings.map((rec) => (
                   <div
                     key={rec.id}
-                    className="glass-panel rounded-2xl p-4 flex items-center justify-between gap-4 border border-white/10 hover:border-white/20 transition group bg-slate-900/60"
+                    className="rounded-xl p-3.5 flex items-center justify-between gap-3 border border-white/10 hover:border-white/20 transition group bg-slate-900/60"
                   >
-                    <div className="flex items-center gap-4 min-w-0">
+                    <div className="flex items-center gap-3.5 min-w-0">
                       <button
                         onClick={() => window.electronAPI.playRecording(rec.filePath)}
-                        className="w-12 h-12 rounded-xl bg-indigo-600/20 group-hover:bg-indigo-600 text-indigo-400 group-hover:text-white flex items-center justify-center transition shadow-sm shrink-0"
+                        className="w-10 h-10 rounded-lg bg-indigo-600/20 group-hover:bg-indigo-600 text-indigo-400 group-hover:text-white flex items-center justify-center transition shadow-sm shrink-0"
                         title="Play Video"
                       >
-                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                        <Play className="w-4 h-4 fill-current ml-0.5" />
                       </button>
 
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-200 truncate group-hover:text-white transition">
+                        <p className="text-xs font-bold text-slate-200 truncate group-hover:text-white transition">
                           {rec.fileName}
                         </p>
-                        <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
-                          <span className="flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <div className="flex items-center gap-2.5 text-[11px] text-slate-400 mt-0.5">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-slate-500" />
                             {formatDuration(rec.duration)}
                           </span>
                           <span>•</span>
-                          <span className="flex items-center gap-1.5">
-                            <HardDrive className="w-3.5 h-3.5 text-slate-500" />
+                          <span className="flex items-center gap-1">
+                            <HardDrive className="w-3 h-3 text-slate-500" />
                             {formatSize(rec.fileSize)}
                           </span>
                           <span>•</span>
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-slate-500" />
                             {formatDate(rec.timestamp)}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => window.electronAPI.openRecordingInFolder(rec.filePath)}
-                        className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition border border-white/10"
+                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition border border-white/10"
                         title="Show in File Explorer"
                       >
-                        <Folder className="w-4 h-4" />
+                        <Folder className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setDeleteTargetId(rec.id)}
-                        className="p-2.5 rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition border border-white/10"
+                        className="p-2 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition border border-white/10"
                         title="Delete Video"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -291,84 +294,84 @@ export const App: React.FC = () => {
 
         {/* 2. EXPANDED MULTI-SECTION SETTINGS VIEW */}
         {activeMainTab === 'settings' && (
-          <div className="flex-1 flex overflow-hidden max-w-5xl mx-auto w-full">
+          <div className="flex-1 flex overflow-hidden max-w-4xl mx-auto w-full min-h-0">
             {/* Left Sidebar Sub-Navigation */}
-            <aside className="w-56 p-5 border-r border-white/10 space-y-1.5 shrink-0">
+            <aside className="w-48 p-4 border-r border-white/10 space-y-1 shrink-0">
               <button
                 onClick={() => setActiveSettingsSection('general')}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-left ${
                   activeSettingsSection === 'general'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Monitor className="w-4 h-4" />
+                <Monitor className="w-3.5 h-3.5" />
                 <span>Recording & Timer</span>
               </button>
 
               <button
                 onClick={() => setActiveSettingsSection('audio')}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-left ${
                   activeSettingsSection === 'audio'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Mic className="w-4 h-4" />
+                <Mic className="w-3.5 h-3.5" />
                 <span>Audio Devices</span>
               </button>
 
               <button
                 onClick={() => setActiveSettingsSection('gpu')}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-left ${
                   activeSettingsSection === 'gpu'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Cpu className="w-4 h-4" />
+                <Cpu className="w-3.5 h-3.5" />
                 <span>GPU & Encoding</span>
               </button>
 
               <button
                 onClick={() => setActiveSettingsSection('storage')}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-left ${
                   activeSettingsSection === 'storage'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Folder className="w-4 h-4" />
+                <Folder className="w-3.5 h-3.5" />
                 <span>Storage & Export</span>
               </button>
 
               <button
                 onClick={() => setActiveSettingsSection('shortcuts')}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-left ${
                   activeSettingsSection === 'shortcuts'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Keyboard className="w-4 h-4" />
+                <Keyboard className="w-3.5 h-3.5" />
                 <span>Shortcuts</span>
               </button>
             </aside>
 
             {/* Right Settings Content Panels */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-6">
+            <div className="flex-1 p-6 overflow-y-auto space-y-5">
               {activeSettingsSection === 'general' && (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div className="pb-3 border-b border-white/10">
-                    <h2 className="text-base font-bold text-white">Recording & Countdown</h2>
-                    <p className="text-xs text-slate-400">Configure pre-recording countdown and framerate</p>
+                    <h2 className="text-sm font-bold text-white">Recording & Countdown</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">Configure pre-recording countdown and framerate</p>
                   </div>
 
                   {/* Pre-recording Countdown Setting */}
-                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-3">
+                  <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-2.5">
                     <label className="text-xs font-bold text-slate-200 block">Pre-Recording Countdown</label>
-                    <p className="text-xs text-slate-400">
-                      Shows a visual 3-2-1 overlay and waits on the GO screen before actual recording begins.
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Shows an animated 3-2-1 overlay and pauses at the GO confirmation screen.
                     </p>
                     <div className="grid grid-cols-3 gap-2 pt-1">
                       {[
@@ -379,9 +382,9 @@ export const App: React.FC = () => {
                         <button
                           key={item.val}
                           onClick={() => handleUpdateSettings({ countdownSeconds: item.val as CountdownChoice })}
-                          className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition ${
+                          className={`py-2 px-3 rounded-lg text-xs font-bold border transition ${
                             settings.countdownSeconds === item.val
-                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30'
+                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
                               : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
                           }`}
                         >
@@ -392,16 +395,16 @@ export const App: React.FC = () => {
                   </div>
 
                   {/* Target Framerate */}
-                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-3">
+                  <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-2.5">
                     <label className="text-xs font-bold text-slate-200 block">Target Framerate</label>
                     <div className="grid grid-cols-2 gap-2">
                       {[60, 30].map((fps) => (
                         <button
                           key={fps}
                           onClick={() => handleUpdateSettings({ framerate: fps as 30 | 60 })}
-                          className={`py-3 rounded-xl text-xs font-bold border transition ${
+                          className={`py-2.5 rounded-lg text-xs font-bold border transition ${
                             settings.framerate === fps
-                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30'
+                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
                               : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
                           }`}
                         >
@@ -414,21 +417,21 @@ export const App: React.FC = () => {
               )}
 
               {activeSettingsSection === 'audio' && (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div className="pb-3 border-b border-white/10">
-                    <h2 className="text-base font-bold text-white">Audio Capture Devices</h2>
-                    <p className="text-xs text-slate-400">Manage microphone input and system sound loopback</p>
+                    <h2 className="text-sm font-bold text-white">Audio Capture Devices</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">Manage microphone input and system sound loopback</p>
                   </div>
 
-                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-4">
-                    <div className="flex items-center justify-between">
+                  <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-3.5">
+                    <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-xs font-bold text-slate-200">Record Microphone Input</p>
-                        <p className="text-xs text-slate-400">Captures external voice over 48kHz audio graph</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Captures external voice over 48kHz audio graph</p>
                       </div>
                       <button
                         onClick={() => handleUpdateSettings({ captureMicrophone: !settings.captureMicrophone })}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition border ${
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition border shrink-0 ${
                           settings.captureMicrophone
                             ? 'bg-emerald-600 border-emerald-500 text-white'
                             : 'bg-slate-800 border-white/10 text-slate-400'
@@ -438,14 +441,14 @@ export const App: React.FC = () => {
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                    <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/5">
                       <div>
                         <p className="text-xs font-bold text-slate-200">Record System Sound (Loopback)</p>
-                        <p className="text-xs text-slate-400">Captures desktop applications, games, and browser audio</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Captures desktop applications, games, and browser audio</p>
                       </div>
                       <button
                         onClick={() => handleUpdateSettings({ captureSystemAudio: !settings.captureSystemAudio })}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition border ${
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition border shrink-0 ${
                           settings.captureSystemAudio
                             ? 'bg-emerald-600 border-emerald-500 text-white'
                             : 'bg-slate-800 border-white/10 text-slate-400'
@@ -459,20 +462,20 @@ export const App: React.FC = () => {
               )}
 
               {activeSettingsSection === 'gpu' && (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div className="pb-3 border-b border-white/10">
-                    <h2 className="text-base font-bold text-white">GPU & Hardware Encoding</h2>
-                    <p className="text-xs text-slate-400">Hardware acceleration and encoder engine configuration</p>
+                    <h2 className="text-sm font-bold text-white">GPU & Hardware Encoding</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">Hardware acceleration and encoder engine configuration</p>
                   </div>
 
-                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                        <Cpu className="w-4 h-4 text-indigo-400" />
+                  <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                        <Cpu className="w-3.5 h-3.5 text-indigo-400" />
                         Hardware Encoder
                       </label>
                       {hwInfo && (
-                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
                           {hwInfo.hasNvidia ? 'NVENC Active' : hwInfo.hasAmd ? 'AMF Active' : 'x264 Active'}
                         </span>
                       )}
@@ -486,9 +489,9 @@ export const App: React.FC = () => {
                         <button
                           key={enc.id}
                           onClick={() => handleUpdateSettings({ encoder: enc.id as EncoderChoice })}
-                          className={`py-3 rounded-xl text-xs font-bold border transition ${
+                          className={`py-2.5 rounded-lg text-xs font-bold border transition ${
                             settings.encoder === enc.id
-                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30'
+                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
                               : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
                           }`}
                         >
@@ -501,28 +504,28 @@ export const App: React.FC = () => {
               )}
 
               {activeSettingsSection === 'storage' && (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div className="pb-3 border-b border-white/10">
-                    <h2 className="text-base font-bold text-white">Storage & Export</h2>
-                    <p className="text-xs text-slate-400">Default save location and recording output format</p>
+                    <h2 className="text-sm font-bold text-white">Storage & Export</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">Default save location and recording output format</p>
                   </div>
 
                   {/* Default Save Directory */}
-                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-3">
+                  <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-2.5">
                     <label className="text-xs font-bold text-slate-200 block">Default Save Destination</label>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-slate-950/80 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-300 font-mono truncate">
+                      <div className="flex-1 bg-slate-950/80 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono truncate">
                         {settings.outputPath}
                       </div>
                       <button
                         onClick={handleSelectDirectory}
-                        className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-sm shrink-0"
+                        className="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-sm shrink-0"
                       >
                         Change
                       </button>
                       <button
                         onClick={handleResetDirectory}
-                        className="px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold transition border border-white/10 shrink-0"
+                        className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold transition border border-white/10 shrink-0"
                         title="Reset to default (%USERPROFILE%\Videos\Reco)"
                       >
                         Reset
@@ -531,16 +534,16 @@ export const App: React.FC = () => {
                   </div>
 
                   {/* Default Format */}
-                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 space-y-3">
-                    <label className="text-xs font-bold text-slate-200 block">Default Video Container Format</label>
+                  <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-2.5">
+                    <label className="text-xs font-bold text-slate-200 block">Default Video Format</label>
                     <div className="grid grid-cols-3 gap-2">
                       {(['mp4', 'mkv', 'webm'] as OutputFormatChoice[]).map((fmt) => (
                         <button
                           key={fmt}
                           onClick={() => handleUpdateSettings({ defaultFormat: fmt })}
-                          className={`py-2.5 rounded-xl text-xs font-bold uppercase border transition ${
+                          className={`py-2 rounded-lg text-xs font-bold uppercase border transition ${
                             settings.defaultFormat === fmt
-                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30'
+                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
                               : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
                           }`}
                         >
@@ -553,37 +556,37 @@ export const App: React.FC = () => {
               )}
 
               {activeSettingsSection === 'shortcuts' && (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div className="pb-3 border-b border-white/10">
-                    <h2 className="text-base font-bold text-white">Keyboard Shortcuts</h2>
-                    <p className="text-xs text-slate-400">Global system-wide hotkeys and local controls</p>
+                    <h2 className="text-sm font-bold text-white">Keyboard Shortcuts</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">Global system-wide hotkeys and local controls</p>
                   </div>
 
-                  <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-slate-900/50 divide-y divide-white/5">
-                    <div className="flex items-center justify-between py-2.5">
+                  <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 divide-y divide-white/5">
+                    <div className="flex items-center justify-between py-2">
                       <span className="text-xs text-slate-300 font-medium">Record / Stop / Confirm GO</span>
-                      <kbd className="px-2.5 py-1 rounded-lg bg-slate-950 border border-white/15 text-xs font-mono font-bold text-indigo-300">
+                      <kbd className="px-2 py-0.5 rounded-md bg-slate-950 border border-white/15 text-xs font-mono font-bold text-indigo-300">
                         Ctrl + Shift + R
                       </kbd>
                     </div>
 
-                    <div className="flex items-center justify-between py-2.5">
+                    <div className="flex items-center justify-between py-2">
                       <span className="text-xs text-slate-300 font-medium">Pause / Resume Recording</span>
-                      <kbd className="px-2.5 py-1 rounded-lg bg-slate-950 border border-white/15 text-xs font-mono font-bold text-amber-300">
+                      <kbd className="px-2 py-0.5 rounded-md bg-slate-950 border border-white/15 text-xs font-mono font-bold text-amber-300">
                         Ctrl + Shift + P
                       </kbd>
                     </div>
 
-                    <div className="flex items-center justify-between py-2.5">
+                    <div className="flex items-center justify-between py-2">
                       <span className="text-xs text-slate-300 font-medium">Cancel Countdown / Cancel GO</span>
-                      <kbd className="px-2.5 py-1 rounded-lg bg-slate-950 border border-white/15 text-xs font-mono font-bold text-rose-300">
+                      <kbd className="px-2 py-0.5 rounded-md bg-slate-950 border border-white/15 text-xs font-mono font-bold text-rose-300">
                         Esc
                       </kbd>
                     </div>
 
-                    <div className="flex items-center justify-between py-2.5">
+                    <div className="flex items-center justify-between py-2">
                       <span className="text-xs text-slate-300 font-medium">Preview Play / Pause</span>
-                      <kbd className="px-2.5 py-1 rounded-lg bg-slate-950 border border-white/15 text-xs font-mono font-bold text-emerald-300">
+                      <kbd className="px-2 py-0.5 rounded-md bg-slate-950 border border-white/15 text-xs font-mono font-bold text-emerald-300">
                         Space
                       </kbd>
                     </div>
@@ -596,15 +599,15 @@ export const App: React.FC = () => {
 
         {/* 3. ABOUT & LEGAL VIEW */}
         {activeMainTab === 'about' && (
-          <div className="flex-1 p-6 overflow-y-auto max-w-3xl mx-auto w-full space-y-6">
-            <div className="glass-panel p-6 rounded-3xl border border-white/10 text-center relative overflow-hidden bg-slate-900/50">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-rose-500 flex items-center justify-center shadow-xl shadow-indigo-600/30 mb-4">
-                <Video className="w-8 h-8 text-white" />
+          <div className="flex-1 p-6 overflow-y-auto max-w-3xl mx-auto w-full space-y-5">
+            <div className="p-5 rounded-2xl border border-white/10 text-center relative overflow-hidden bg-slate-900/50">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-rose-500 flex items-center justify-center shadow-lg shadow-indigo-600/30 mb-3">
+                <Video className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-2xl font-black text-white tracking-tight">RECO</h1>
-              <p className="text-xs text-slate-400 font-medium mt-1">Modern Offline Desktop Screen Recorder</p>
-              <p className="text-xs text-slate-500 mt-2 font-mono">Version 1.0.0 • 64-bit Windows</p>
-              <p className="text-xs text-slate-400 mt-3">
+              <h1 className="text-xl font-black text-white tracking-tight">RECO</h1>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Modern Offline Desktop Screen Recorder</p>
+              <p className="text-xs text-slate-500 mt-1 font-mono">Version 1.0.0 • 64-bit Windows</p>
+              <p className="text-xs text-slate-400 mt-2">
                 Copyright © 2026 <strong className="text-slate-200">Hardik Prajapati</strong>. Licensed under the <strong className="text-indigo-400">MIT License</strong>.
               </p>
             </div>
@@ -612,64 +615,62 @@ export const App: React.FC = () => {
             <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => setSelectedLegalDoc(selectedLegalDoc === 'license' ? null : 'license')}
-                className={`p-4 rounded-2xl border text-left transition ${
+                className={`p-3.5 rounded-xl border text-left transition ${
                   selectedLegalDoc === 'license'
                     ? 'bg-indigo-600/20 border-indigo-500 text-white'
                     : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white'
                 }`}
               >
-                <Scale className="w-5 h-5 text-indigo-400 mb-2" />
+                <Scale className="w-4 h-4 text-indigo-400 mb-1.5" />
                 <h3 className="text-xs font-bold">MIT License</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">Software license terms</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Software license terms</p>
               </button>
 
               <button
                 onClick={() => setSelectedLegalDoc(selectedLegalDoc === 'thirdparty' ? null : 'thirdparty')}
-                className={`p-4 rounded-2xl border text-left transition ${
+                className={`p-3.5 rounded-xl border text-left transition ${
                   selectedLegalDoc === 'thirdparty'
                     ? 'bg-indigo-600/20 border-indigo-500 text-white'
                     : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white'
                 }`}
               >
-                <FileText className="w-5 h-5 text-indigo-400 mb-2" />
+                <FileText className="w-4 h-4 text-indigo-400 mb-1.5" />
                 <h3 className="text-xs font-bold">Third-Party Notices</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">Open source attributions</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Open source attributions</p>
               </button>
 
               <button
                 onClick={() => setSelectedLegalDoc(selectedLegalDoc === 'privacy' ? null : 'privacy')}
-                className={`p-4 rounded-2xl border text-left transition ${
+                className={`p-3.5 rounded-xl border text-left transition ${
                   selectedLegalDoc === 'privacy'
                     ? 'bg-indigo-600/20 border-indigo-500 text-white'
                     : 'bg-slate-900/60 border-white/10 text-slate-300 hover:text-white'
                 }`}
               >
-                <Lock className="w-5 h-5 text-emerald-400 mb-2" />
+                <Lock className="w-4 h-4 text-emerald-400 mb-1.5" />
                 <h3 className="text-xs font-bold">Privacy Guarantee</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">100% offline & zero telemetry</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">100% offline & zero telemetry</p>
               </button>
             </div>
 
             {selectedLegalDoc && (
-              <div className="glass-panel p-6 rounded-2xl border border-white/15 max-h-80 overflow-y-auto text-xs text-slate-300 font-sans leading-relaxed space-y-3 bg-slate-950/70">
+              <div className="p-4 rounded-xl border border-white/15 max-h-72 overflow-y-auto text-xs text-slate-300 font-sans leading-relaxed space-y-2.5 bg-slate-950/70">
                 {selectedLegalDoc === 'license' && (
                   <div>
-                    <h3 className="text-sm font-bold text-white mb-2">MIT License</h3>
-                    <p className="font-mono text-[11px] bg-black/40 p-4 rounded-xl text-slate-300 border border-white/5">
+                    <h3 className="text-xs font-bold text-white mb-1.5">MIT License</h3>
+                    <p className="font-mono text-[10px] bg-black/40 p-3 rounded-lg text-slate-300 border border-white/5">
                       Copyright (c) 2026 Hardik Prajapati<br /><br />
                       Permission is hereby granted, free of charge, to any person obtaining a copy
                       of this software and associated documentation files (the "Software"), to deal
-                      in the Software without restriction, including without limitation the rights
-                      to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-                      copies of the Software...
+                      in the Software without restriction...
                     </p>
                   </div>
                 )}
 
                 {selectedLegalDoc === 'thirdparty' && (
                   <div>
-                    <h3 className="text-sm font-bold text-white mb-2">Third-Party Software Attribution</h3>
-                    <ul className="space-y-1.5 text-slate-300">
+                    <h3 className="text-xs font-bold text-white mb-1.5">Third-Party Software Attribution</h3>
+                    <ul className="space-y-1 text-slate-300 text-[11px]">
                       <li>• <strong>Electron & Chromium</strong> — OpenJS Foundation / Google LLC (MIT / BSD)</li>
                       <li>• <strong>React 19 & React DOM</strong> — Meta Platforms, Inc. (MIT)</li>
                       <li>• <strong>FFmpeg & FFprobe</strong> — FFmpeg developers (GPL v3 / LGPL v2.1+)</li>
@@ -682,9 +683,9 @@ export const App: React.FC = () => {
 
                 {selectedLegalDoc === 'privacy' && (
                   <div>
-                    <h3 className="text-sm font-bold text-white mb-2">Privacy & Offline Data Guarantee</h3>
-                    <p>• <strong>Zero Cloud Uploads</strong>: All recordings and audio are processed exclusively on your local computer.</p>
-                    <p>• <strong>Zero Telemetry</strong>: RECO contains no analytics probes or tracking SDKs.</p>
+                    <h3 className="text-xs font-bold text-white mb-1.5">Privacy & Offline Data Guarantee</h3>
+                    <p className="text-[11px]"> All recordings and audio are processed exclusively on your local computer.</p>
+                    <p className="text-[11px]"> RECO contains no analytics probes or tracking SDKs.</p>
                   </div>
                 )}
               </div>
@@ -696,29 +697,29 @@ export const App: React.FC = () => {
       {/* Delete Confirmation Modal */}
       {deleteTargetId && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-white/15 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6" />
+          <div className="bg-slate-900 border border-white/15 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-3.5">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5" />
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-white">Delete Recording?</h3>
+              <h3 className="text-sm font-bold text-white">Delete Recording?</h3>
               <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                 This recording file will be permanently removed from your computer.
               </p>
             </div>
 
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex items-center gap-2.5 pt-1">
               <button
                 onClick={() => setDeleteTargetId(null)}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition border border-white/5"
+                className="flex-1 py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition border border-white/5"
               >
                 Cancel
               </button>
 
               <button
                 onClick={() => handleDeleteRecording(deleteTargetId)}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-md shadow-rose-600/30"
+                className="flex-1 py-2 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-sm"
               >
                 Delete
               </button>
