@@ -122,8 +122,8 @@ export class WindowManager {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
 
-    const toolbarW = 840;
-    const toolbarH = 68;
+    const toolbarW = 940;
+    const toolbarH = 72;
     const appIcon = path.join(__dirname, '../../asset/icon.png');
 
     this.toolbarWindow = new BrowserWindow({
