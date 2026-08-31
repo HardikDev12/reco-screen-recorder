@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="asset/logo-transparent.png" alt="Reco Logo" width="280"/>
+  <img src="asset/logo-verticle.png" alt="Reco Logo" width="220"/>
 </p>
 
 <h1 align="center">Reco — Screen Recorder</h1>
