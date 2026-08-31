@@ -127,6 +127,7 @@ export class WindowManager {
     const appIcon = path.join(__dirname, '../../asset/icon.png');
 
     this.toolbarWindow = new BrowserWindow({
+      title: 'Reco',
       width: toolbarW,
       height: toolbarH,
       x: Math.round(width / 2 - toolbarW / 2),

@@ -5,6 +5,11 @@ import { FFmpegRecorder } from './ffmpeg/recorder';
 import { RecordingsStore } from './storage/recordingsStore';
 import { RecorderSettings, RegionBounds } from '../shared/types';
 
+// Set application identity for Windows Shell and Task Manager
+app.name = 'Reco';
+app.setName('Reco');
+app.setAppUserModelId('com.hardikprajapati.reco');
+
 // Optimize hardware color profile and rasterization for Windows
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('force-color-profile', 'srgb');
@@ -34,6 +39,8 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
+    app.setAppUserModelId('com.hardikprajapati.reco');
+
     // Launch Independent Frame & Toolbar Windows
     windowManager.launchRecordingMode();
 
