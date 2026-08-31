@@ -42,7 +42,7 @@ const ToolbarApp: React.FC = () => {
     recordingDuration,
     micLevel,
     isClipping,
-    preWarmCapturePipeline,
+    initMicrophoneMeter,
     startRecording,
     pauseRecording,
     resumeRecording,
@@ -58,7 +58,7 @@ const ToolbarApp: React.FC = () => {
   useEffect(() => {
     window.electronAPI.getSettings().then((s) => {
       setSettings(s);
-      preWarmCapturePipeline(s);
+      initMicrophoneMeter(s);
     });
 
     const unsubCompleted = window.electronAPI.onRecordingCompleted(() => {
@@ -83,7 +83,7 @@ const ToolbarApp: React.FC = () => {
       unsubTogglePause();
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [preWarmCapturePipeline, handleTogglePause]);
+  }, [initMicrophoneMeter, handleTogglePause]);
 
   const formatTime = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);
@@ -117,14 +117,13 @@ const ToolbarApp: React.FC = () => {
     const updated = { ...settings, captureMicrophone: !settings.captureMicrophone };
     setSettings(updated);
     await window.electronAPI.saveSettings(updated);
-    preWarmCapturePipeline(updated);
+    initMicrophoneMeter(updated);
   };
 
   const toggleSystemAudio = async () => {
     const updated = { ...settings, captureSystemAudio: !settings.captureSystemAudio };
     setSettings(updated);
     await window.electronAPI.saveSettings(updated);
-    preWarmCapturePipeline(updated);
   };
 
   const toggleWebcam = () => {

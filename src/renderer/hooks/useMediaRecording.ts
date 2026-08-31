@@ -12,108 +12,58 @@ export function useMediaRecording() {
   const timerRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const micAnalyserRef = useRef<AnalyserNode | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const activeRecordingStreamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  const activeStreamRef = useRef<MediaStream | null>(null);
-  const isPreWarmedRef = useRef<boolean>(false);
-
-  // Pre-warm the capture pipeline (WebRTC desktop + 48kHz AudioContext + Mic)
-  const preWarmCapturePipeline = useCallback(async (settings: RecorderSettings) => {
+  // Initialize or update microphone level monitor (isolated from heavy screen capture)
+  const initMicrophoneMeter = useCallback(async (settings: RecorderSettings) => {
     try {
-      if (isPreWarmedRef.current && activeStreamRef.current) {
-        return activeStreamRef.current;
+      // Clean up previous mic stream if disabled or changing
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((t) => t.stop());
+        micStreamRef.current = null;
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
 
-      // Get primary display screen
-      const sources = await window.electronAPI.getSources();
-      const primaryScreen = sources.find((s) => s.isScreen) || sources[0];
-
-      if (!primaryScreen) {
-        throw new Error('No display screen found');
+      if (!settings.captureMicrophone) {
+        setMicLevel(0);
+        setIsClipping(false);
+        return;
       }
 
-      // 1. WebRTC Screen Stream
-      const desktopStream = await navigator.mediaDevices.getUserMedia({
-        audio: settings.captureSystemAudio
+      const micStream = await navigator.mediaDevices.getUserMedia({
+        audio: settings.selectedMicrophoneId
           ? {
-              mandatory: {
-                chromeMediaSource: 'desktop'
-              }
-            } as any
-          : false,
-        video: {
-          mandatory: {
-            chromeMediaSource: 'desktop',
-            chromeMediaSourceId: primaryScreen.id,
-            minFrameRate: settings.framerate || 60,
-            maxFrameRate: settings.framerate || 60
-          }
-        } as any
+              deviceId: { exact: settings.selectedMicrophoneId },
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false,
+              sampleRate: 48000
+            }
+          : {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false,
+              sampleRate: 48000
+            },
+        video: false
       });
 
-      // 2. High Quality 48kHz AudioContext
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
+      micStreamRef.current = micStream;
+
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({
         sampleRate: 48000
       });
-      audioContextRef.current = audioCtx;
+      const micSource = audioCtx.createMediaStreamSource(micStream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 64;
+      micSource.connect(analyser);
+      micAnalyserRef.current = analyser;
 
-      // Soft Limiter / Dynamic Compressor to prevent digital clipping
-      const compressor = audioCtx.createDynamicsCompressor();
-      compressor.threshold.setValueAtTime(-24, audioCtx.currentTime);
-      compressor.knee.setValueAtTime(30, audioCtx.currentTime);
-      compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
-      compressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
-      compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
-
-      const destination = audioCtx.createMediaStreamDestination();
-      compressor.connect(destination);
-
-      // Desktop system sound track
-      const sysTracks = desktopStream.getAudioTracks();
-      if (sysTracks.length > 0) {
-        const sysSource = audioCtx.createMediaStreamSource(new MediaStream([sysTracks[0]]));
-        sysSource.connect(compressor);
-      }
-
-      // 3. Microphone Track
-      if (settings.captureMicrophone) {
-        try {
-          const micStream = await navigator.mediaDevices.getUserMedia({
-            audio: settings.selectedMicrophoneId
-              ? {
-                  deviceId: { exact: settings.selectedMicrophoneId },
-                  echoCancellation: false,
-                  noiseSuppression: false,
-                  autoGainControl: false,
-                  sampleRate: 48000
-                }
-              : {
-                  echoCancellation: false,
-                  noiseSuppression: false,
-                  autoGainControl: false,
-                  sampleRate: 48000
-                },
-            video: false
-          });
-
-          const micSource = audioCtx.createMediaStreamSource(micStream);
-
-          // Volume analyser for level meter
-          const micAnalyser = audioCtx.createAnalyser();
-          micAnalyser.fftSize = 64;
-          micSource.connect(micAnalyser);
-          micAnalyserRef.current = micAnalyser;
-
-          micSource.connect(compressor);
-        } catch (e) {
-          console.warn('Microphone pre-warm warning:', e);
-        }
-      }
-
-      // Start level meter polling
       const dataArray = new Uint8Array(32);
       const updateMeter = () => {
         if (micAnalyserRef.current) {
@@ -131,33 +81,110 @@ export function useMediaRecording() {
         animationFrameRef.current = requestAnimationFrame(updateMeter);
       };
       updateMeter();
-
-      const combinedTracks = [
-        ...desktopStream.getVideoTracks(),
-        ...destination.stream.getAudioTracks()
-      ];
-      const combinedStream = new MediaStream(combinedTracks);
-
-      activeStreamRef.current = combinedStream;
-      isPreWarmedRef.current = true;
-      return combinedStream;
     } catch (err) {
-      console.error('Pre-warm capture pipeline failed:', err);
-      return null;
+      console.warn('Microphone meter initialization notice:', err);
     }
   }, []);
 
-  // Instant start recording (zero latency)
+  // Construct recording capture pipeline on-demand when recording starts
+  const createRecordingStream = async (settings: RecorderSettings): Promise<MediaStream> => {
+    const sources = await window.electronAPI.getSources();
+    const primaryScreen = sources.find((s) => s.isScreen) || sources[0];
+
+    if (!primaryScreen) {
+      throw new Error('No display screen found for capture');
+    }
+
+    // 1. WebRTC Screen Stream
+    const desktopStream = await navigator.mediaDevices.getUserMedia({
+      audio: settings.captureSystemAudio
+        ? {
+            mandatory: {
+              chromeMediaSource: 'desktop'
+            }
+          } as any
+        : false,
+      video: {
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: primaryScreen.id,
+          minFrameRate: settings.framerate || 60,
+          maxFrameRate: settings.framerate || 60
+        }
+      } as any
+    });
+
+    // 2. Audio Processing Graph
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+      } catch (e) {}
+    }
+
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({
+      sampleRate: 48000
+    });
+    audioContextRef.current = audioCtx;
+
+    // Studio Dynamics Limiter / Compressor
+    const compressor = audioCtx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-24, audioCtx.currentTime);
+    compressor.knee.setValueAtTime(30, audioCtx.currentTime);
+    compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+    compressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
+    compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+    const destination = audioCtx.createMediaStreamDestination();
+    compressor.connect(destination);
+
+    // Desktop system sound track
+    const sysTracks = desktopStream.getAudioTracks();
+    if (sysTracks.length > 0) {
+      const sysSource = audioCtx.createMediaStreamSource(new MediaStream([sysTracks[0]]));
+      sysSource.connect(compressor);
+    }
+
+    // Microphone track
+    if (settings.captureMicrophone) {
+      try {
+        const micStream = await navigator.mediaDevices.getUserMedia({
+          audio: settings.selectedMicrophoneId
+            ? {
+                deviceId: { exact: settings.selectedMicrophoneId },
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false,
+                sampleRate: 48000
+              }
+            : {
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false,
+                sampleRate: 48000
+              },
+          video: false
+        });
+        const micSource = audioCtx.createMediaStreamSource(micStream);
+        micSource.connect(compressor);
+      } catch (e) {
+        console.warn('Microphone capture stream notice:', e);
+      }
+    }
+
+    const combinedTracks = [
+      ...desktopStream.getVideoTracks(),
+      ...destination.stream.getAudioTracks()
+    ];
+    const combinedStream = new MediaStream(combinedTracks);
+    activeRecordingStreamRef.current = combinedStream;
+
+    return combinedStream;
+  };
+
+  // Instant start recording
   const startRecording = async (settings: RecorderSettings, bounds?: RegionBounds | null) => {
     try {
-      let stream = activeStreamRef.current;
-      if (!stream || stream.getVideoTracks().length === 0 || !stream.getVideoTracks()[0].readyState) {
-        stream = await preWarmCapturePipeline(settings);
-      }
-
-      if (!stream) {
-        throw new Error('Failed to initialize screen recording stream');
-      }
+      const stream = await createRecordingStream(settings);
 
       // Convert logical bounds to physical DPI pixels if specified
       let physicalBounds: RegionBounds | null = null;
@@ -204,7 +231,12 @@ export function useMediaRecording() {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
     } catch (err) {
-      console.error('Instant start recording failed:', err);
+      console.error('Start recording failed:', err);
+      // Clean up any partially created stream
+      if (activeRecordingStreamRef.current) {
+        activeRecordingStreamRef.current.getTracks().forEach((t) => t.stop());
+        activeRecordingStreamRef.current = null;
+      }
       throw err;
     }
   };
@@ -255,7 +287,22 @@ export function useMediaRecording() {
     }
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {}
+    }
+
+    // Stop and release desktop capture stream tracks immediately
+    if (activeRecordingStreamRef.current) {
+      activeRecordingStreamRef.current.getTracks().forEach((t) => t.stop());
+      activeRecordingStreamRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+      } catch (e) {}
+      audioContextRef.current = null;
     }
 
     setIsRecording(false);
@@ -269,9 +316,16 @@ export function useMediaRecording() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      if (audioContextRef.current) audioContextRef.current.close();
-      if (activeStreamRef.current) {
-        activeStreamRef.current.getTracks().forEach((t) => t.stop());
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      if (activeRecordingStreamRef.current) {
+        activeRecordingStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      if (audioContextRef.current) {
+        try {
+          audioContextRef.current.close();
+        } catch (e) {}
       }
     };
   }, []);
@@ -282,7 +336,7 @@ export function useMediaRecording() {
     recordingDuration,
     micLevel,
     isClipping,
-    preWarmCapturePipeline,
+    initMicrophoneMeter,
     startRecording,
     pauseRecording,
     resumeRecording,

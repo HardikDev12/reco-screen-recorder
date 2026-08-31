@@ -5,10 +5,8 @@ import { FFmpegRecorder } from './ffmpeg/recorder';
 import { RecordingsStore } from './storage/recordingsStore';
 import { RecorderSettings, RegionBounds } from '../shared/types';
 
-// Fix Chromium GPU / Skia mailbox error on Windows
-app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion,SharedImageMailbox');
+// Optimize hardware color profile and rasterization for Windows
 app.commandLine.appendSwitch('enable-gpu-rasterization');
-app.commandLine.appendSwitch('enable-zero-copy');
 app.commandLine.appendSwitch('force-color-profile', 'srgb');
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -24,11 +22,11 @@ if (!gotTheLock) {
   app.on('second-instance', () => {
     const frame = windowManager.getFrameWindow();
     const toolbar = windowManager.getToolbarWindow();
-    if (frame) {
+    if (frame && !frame.isDestroyed()) {
       if (frame.isMinimized()) frame.restore();
       frame.focus();
     }
-    if (toolbar) {
+    if (toolbar && !toolbar.isDestroyed()) {
       if (toolbar.isMinimized()) toolbar.restore();
       toolbar.focus();
     }
@@ -61,6 +59,7 @@ if (!gotTheLock) {
 
   app.on('will-quit', () => {
     globalShortcut.unregisterAll();
+    windowManager.closeAllAuxiliaryWindows();
   });
 
   // --- IPC Handlers ---
@@ -83,11 +82,12 @@ if (!gotTheLock) {
   ipcMain.on('app:minimize', () => {
     const toolbar = windowManager.getToolbarWindow();
     const frame = windowManager.getFrameWindow();
-    if (toolbar) toolbar.minimize();
-    if (frame) frame.minimize();
+    if (toolbar && !toolbar.isDestroyed()) toolbar.minimize();
+    if (frame && !frame.isDestroyed()) frame.minimize();
   });
 
   ipcMain.on('app:quit', () => {
+    windowManager.closeAllAuxiliaryWindows();
     app.quit();
   });
 
