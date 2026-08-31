@@ -1,7 +1,7 @@
 import { spawn, ChildProcessWithoutNullStreams, execSync } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
-import { app } from 'electron';
+import { app, screen } from 'electron';
 import { EncoderChoice, RecorderSettings, RecordingItem, SystemHardwareInfo, RegionBounds } from '../../shared/types';
 
 export class FFmpegRecorder {
@@ -140,14 +140,36 @@ export class FFmpegRecorder {
     const encoderArgs = this.getEncoderArgs(settings.encoder);
     const targetFps = settings.framerate || 60;
 
-    // Construct Video Filter: Optional Region Crop + Even dimensions + Standard BT.709 sRGB Color Matrix
+    // Construct Video Filter: Clamped Region Crop + Even dimensions + Standard BT.709 sRGB Color Matrix
     let videoFilters = 'format=yuv420p';
     if (cropBounds && cropBounds.width > 20 && cropBounds.height > 20) {
-      const cw = Math.floor(cropBounds.width / 2) * 2;
-      const ch = Math.floor(cropBounds.height / 2) * 2;
-      const cx = Math.floor(cropBounds.x);
-      const cy = Math.floor(cropBounds.y);
-      videoFilters = `crop=${cw}:${ch}:${cx}:${cy},format=yuv420p`;
+      try {
+        const primaryDisplay = screen.getPrimaryDisplay();
+        const scale = primaryDisplay.scaleFactor || 1;
+        const screenW = Math.round(primaryDisplay.bounds.width * scale);
+        const screenH = Math.round(primaryDisplay.bounds.height * scale);
+
+        let cx = Math.max(0, Math.floor(cropBounds.x * scale));
+        let cy = Math.max(0, Math.floor(cropBounds.y * scale));
+        let cw = Math.floor(cropBounds.width * scale);
+        let ch = Math.floor(cropBounds.height * scale);
+
+        if (cx + cw > screenW) {
+          cw = screenW - cx;
+        }
+        if (cy + ch > screenH) {
+          ch = screenH - cy;
+        }
+
+        cw = Math.floor(cw / 2) * 2;
+        ch = Math.floor(ch / 2) * 2;
+
+        if (cw >= 32 && ch >= 32) {
+          videoFilters = `crop=${cw}:${ch}:${cx}:${cy},format=yuv420p`;
+        }
+      } catch (e) {
+        console.warn('Crop calculation fallback:', e);
+      }
     }
 
     const args: string[] = [

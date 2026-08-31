@@ -16,6 +16,8 @@ const defaultSettings: RecorderSettings = {
   highlightClicks: false
 };
 
+const ALLOWED_EXTENSIONS = new Set(['.mp4', '.mkv', '.webm', '.mov', '.avi']);
+
 export class RecordingsStore {
   private configDir: string;
   private settingsFile: string;
@@ -69,8 +71,13 @@ export class RecordingsStore {
       if (fs.existsSync(this.recordingsFile)) {
         const raw = fs.readFileSync(this.recordingsFile, 'utf-8');
         const items: RecordingItem[] = JSON.parse(raw);
-        // Verify files still exist on disk
-        return items.filter((item) => fs.existsSync(item.filePath));
+        // Verify files still exist on disk and have valid video extension
+        return items.filter(
+          (item) =>
+            typeof item.filePath === 'string' &&
+            ALLOWED_EXTENSIONS.has(path.extname(item.filePath).toLowerCase()) &&
+            fs.existsSync(item.filePath)
+        );
       }
     } catch (err) {
       console.error('Failed to read recordings list:', err);
@@ -92,7 +99,12 @@ export class RecordingsStore {
   public deleteRecording(id: string): { success: boolean; recordings: RecordingItem[] } {
     const current = this.getRecordings();
     const target = current.find((r) => r.id === id);
-    if (target && fs.existsSync(target.filePath)) {
+    if (
+      target &&
+      typeof target.filePath === 'string' &&
+      ALLOWED_EXTENSIONS.has(path.extname(target.filePath).toLowerCase()) &&
+      fs.existsSync(target.filePath)
+    ) {
       try {
         fs.unlinkSync(target.filePath);
       } catch (err) {
@@ -109,13 +121,21 @@ export class RecordingsStore {
   }
 
   public openRecordingInFolder(filePath: string): void {
-    if (fs.existsSync(filePath)) {
+    if (
+      typeof filePath === 'string' &&
+      ALLOWED_EXTENSIONS.has(path.extname(filePath).toLowerCase()) &&
+      fs.existsSync(filePath)
+    ) {
       shell.showItemInFolder(filePath);
     }
   }
 
   public playRecording(filePath: string): void {
-    if (fs.existsSync(filePath)) {
+    if (
+      typeof filePath === 'string' &&
+      ALLOWED_EXTENSIONS.has(path.extname(filePath).toLowerCase()) &&
+      fs.existsSync(filePath)
+    ) {
       shell.openPath(filePath);
     }
   }

@@ -46,7 +46,6 @@ export function useMediaRecording() {
         return; // Already running stably
       }
 
-      // Clean up previous context before creating
       if (micMeterAudioContextRef.current) {
         try {
           micMeterAudioContextRef.current.close();
@@ -90,7 +89,6 @@ export function useMediaRecording() {
 
       const updateMeter = (timestamp: number) => {
         if (micAnalyserRef.current) {
-          // Throttle UI React state updates to 15fps (~66ms) to avoid high re-render thrashing
           if (timestamp - lastUpdate > 66) {
             lastUpdate = timestamp;
             micAnalyserRef.current.getByteFrequencyData(dataArray);
@@ -122,24 +120,52 @@ export function useMediaRecording() {
       throw new Error('No display screen found for capture');
     }
 
-    // 1. WebRTC Screen Stream
-    const desktopStream = await navigator.mediaDevices.getUserMedia({
-      audio: settings.captureSystemAudio
-        ? {
+    // 1. WebRTC Screen Stream with resilient fallback
+    let desktopStream: MediaStream;
+    if (settings.captureSystemAudio) {
+      try {
+        desktopStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
             mandatory: {
               chromeMediaSource: 'desktop'
             }
+          } as any,
+          video: {
+            mandatory: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: primaryScreen.id,
+              minFrameRate: settings.framerate || 60,
+              maxFrameRate: settings.framerate || 60
+            }
           } as any
-        : false,
-      video: {
-        mandatory: {
-          chromeMediaSource: 'desktop',
-          chromeMediaSourceId: primaryScreen.id,
-          minFrameRate: settings.framerate || 60,
-          maxFrameRate: settings.framerate || 60
-        }
-      } as any
-    });
+        });
+      } catch (audioErr) {
+        console.warn('System audio capture unavailable, falling back to video only:', audioErr);
+        desktopStream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            mandatory: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: primaryScreen.id,
+              minFrameRate: settings.framerate || 60,
+              maxFrameRate: settings.framerate || 60
+            }
+          } as any
+        });
+      }
+    } else {
+      desktopStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: primaryScreen.id,
+            minFrameRate: settings.framerate || 60,
+            maxFrameRate: settings.framerate || 60
+          }
+        } as any
+      });
+    }
 
     // 2. Audio Processing Graph
     if (recordingAudioContextRef.current) {
@@ -198,6 +224,16 @@ export function useMediaRecording() {
       }
     }
 
+    // Ensure at least one continuous silent audio track so FFmpeg audio encoder never faults
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.00001, audioCtx.currentTime); // Inaudible baseline carrier
+      osc.connect(gain);
+      gain.connect(compressor);
+      osc.start();
+    } catch (e) {}
+
     const combinedTracks = [
       ...desktopStream.getVideoTracks(),
       ...destination.stream.getAudioTracks()
@@ -213,20 +249,11 @@ export function useMediaRecording() {
     try {
       const stream = await createRecordingStream(settings);
 
-      // Convert logical bounds to physical DPI pixels if specified
-      let physicalBounds: RegionBounds | null = null;
-      if (bounds) {
-        const dpr = window.devicePixelRatio || 1;
-        physicalBounds = {
-          x: Math.round(bounds.x * dpr),
-          y: Math.round(bounds.y * dpr),
-          width: Math.round(bounds.width * dpr),
-          height: Math.round(bounds.height * dpr)
-        };
-      }
-
       // Spawn FFmpeg in Main Process
-      await window.electronAPI.startRecording(settings, physicalBounds);
+      const startResult = await window.electronAPI.startRecording(settings, bounds);
+      if (!startResult || !startResult.success) {
+        throw new Error('Main process FFmpeg initialization failed');
+      }
 
       // Start MediaRecorder piping
       const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
