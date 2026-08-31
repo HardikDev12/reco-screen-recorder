@@ -40,6 +40,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
+        frame: path.resolve(__dirname, 'frame.html'),
+        toolbar: path.resolve(__dirname, 'toolbar.html'),
         overlay: path.resolve(__dirname, 'overlay.html'),
         main: path.resolve(__dirname, 'index.html'),
         hud: path.resolve(__dirname, 'hud.html'),

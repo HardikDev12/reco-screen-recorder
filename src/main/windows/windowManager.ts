@@ -1,33 +1,59 @@
 import { BrowserWindow, screen, ipcMain, app } from 'electron';
 import path from 'node:path';
+import { RegionBounds } from '../../shared/types';
 
 export class WindowManager {
-  private overlayWindow: BrowserWindow | null = null;
+  private frameWindow: BrowserWindow | null = null;
+  private toolbarWindow: BrowserWindow | null = null;
   private dashboardWindow: BrowserWindow | null = null;
   private webcamWindow: BrowserWindow | null = null;
 
-  public createRecordingOverlayWindow(): BrowserWindow {
-    if (this.overlayWindow) {
-      this.overlayWindow.show();
-      this.overlayWindow.focus();
-      return this.overlayWindow;
+  // Track the physical bounds of the recording frame
+  private currentFrameBounds: RegionBounds = { x: 100, y: 100, width: 1280, height: 720 };
+
+  public getCurrentFrameBounds(): RegionBounds {
+    if (this.frameWindow && !this.frameWindow.isDestroyed()) {
+      const b = this.frameWindow.getBounds();
+      this.currentFrameBounds = { x: b.x, y: b.y, width: b.width, height: b.height };
+    }
+    return this.currentFrameBounds;
+  }
+
+  public launchRecordingMode(): void {
+    this.createRecordingFrameWindow();
+    this.createFloatingToolbarWindow();
+  }
+
+  // 1. Independent Recording Frame Window (Resizable, Draggable anywhere across any screen)
+  public createRecordingFrameWindow(): BrowserWindow {
+    if (this.frameWindow) {
+      this.frameWindow.show();
+      return this.frameWindow;
     }
 
     const primaryDisplay = screen.getPrimaryDisplay();
-    const { width, height } = primaryDisplay.bounds;
+    const { width, height } = primaryDisplay.workAreaSize;
 
-    this.overlayWindow = new BrowserWindow({
-      width,
-      height,
-      x: 0,
-      y: 0,
+    const frameW = Math.min(1280, Math.round(width * 0.75));
+    const frameH = Math.min(720, Math.round(height * 0.75));
+    const frameX = Math.round((width - frameW) / 2);
+    const frameY = Math.round((height - frameH) / 2 - 30);
+
+    this.currentFrameBounds = { x: frameX, y: frameY, width: frameW, height: frameH };
+
+    this.frameWindow = new BrowserWindow({
+      width: frameW,
+      height: frameH,
+      x: frameX,
+      y: frameY,
       frame: false,
       transparent: true,
       alwaysOnTop: true,
-      fullscreen: false,
-      resizable: false,
-      skipTaskbar: false,
-      title: 'Reco Screen Recorder',
+      resizable: true,
+      minWidth: 200,
+      minHeight: 150,
+      hasShadow: false,
+      skipTaskbar: true,
       backgroundColor: '#00000000',
       webPreferences: {
         preload: path.join(__dirname, '../preload/index.js'),
@@ -37,30 +63,102 @@ export class WindowManager {
       }
     });
 
-    // Exclude Reco's overlay and toolbars from screen capture (Windows DWM WDA_EXCLUDEFROMCAPTURE)
+    // Exclude frame from video capture
     try {
-      this.overlayWindow.setContentProtection(true);
-    } catch (err) {
-      console.warn('setContentProtection failed on overlay window:', err);
-    }
+      this.frameWindow.setContentProtection(true);
+    } catch (err) {}
+
+    // Update coordinates on move/resize
+    this.frameWindow.on('move', () => {
+      if (this.frameWindow && !this.frameWindow.isDestroyed()) {
+        const b = this.frameWindow.getBounds();
+        this.currentFrameBounds = { x: b.x, y: b.y, width: b.width, height: b.height };
+        this.frameWindow.webContents.send('frame:bounds-updated', this.currentFrameBounds);
+      }
+    });
+
+    this.frameWindow.on('resize', () => {
+      if (this.frameWindow && !this.frameWindow.isDestroyed()) {
+        const b = this.frameWindow.getBounds();
+        this.currentFrameBounds = { x: b.x, y: b.y, width: b.width, height: b.height };
+        this.frameWindow.webContents.send('frame:bounds-updated', this.currentFrameBounds);
+      }
+    });
 
     if (process.env.VITE_DEV_SERVER_URL) {
-      this.overlayWindow.loadURL(`${process.env.VITE_DEV_SERVER_URL}/overlay.html`);
+      this.frameWindow.loadURL(`${process.env.VITE_DEV_SERVER_URL}/frame.html`);
     } else {
-      this.overlayWindow.loadFile(path.join(__dirname, '../../dist/overlay.html'));
+      this.frameWindow.loadFile(path.join(__dirname, '../../dist/frame.html'));
     }
 
-    this.overlayWindow.on('closed', () => {
-      this.overlayWindow = null;
-      this.closeAllAuxiliaryWindows();
+    this.frameWindow.on('closed', () => {
+      this.frameWindow = null;
+    });
+
+    return this.frameWindow;
+  }
+
+  // 2. Independent Floating Control Toolbar Window
+  public createFloatingToolbarWindow(): BrowserWindow {
+    if (this.toolbarWindow) {
+      this.toolbarWindow.show();
+      return this.toolbarWindow;
+    }
+
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width, height } = primaryDisplay.workAreaSize;
+
+    this.toolbarWindow = new BrowserWindow({
+      width: 620,
+      height: 64,
+      x: Math.round(width / 2 - 310),
+      y: height - 85,
+      frame: false,
+      transparent: true,
+      alwaysOnTop: true,
+      resizable: false,
+      hasShadow: false,
+      skipTaskbar: false,
+      backgroundColor: '#00000000',
+      webPreferences: {
+        preload: path.join(__dirname, '../preload/index.js'),
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    });
+
+    // Exclude toolbar from video capture
+    try {
+      this.toolbarWindow.setContentProtection(true);
+    } catch (err) {}
+
+    if (process.env.VITE_DEV_SERVER_URL) {
+      this.toolbarWindow.loadURL(`${process.env.VITE_DEV_SERVER_URL}/toolbar.html`);
+    } else {
+      this.toolbarWindow.loadFile(path.join(__dirname, '../../dist/toolbar.html'));
+    }
+
+    this.toolbarWindow.on('closed', () => {
+      this.toolbarWindow = null;
       app.quit();
     });
 
-    return this.overlayWindow;
+    return this.toolbarWindow;
   }
 
-  public getOverlayWindow(): BrowserWindow | null {
-    return this.overlayWindow;
+  public getFrameWindow(): BrowserWindow | null {
+    return this.frameWindow;
+  }
+
+  public getToolbarWindow(): BrowserWindow | null {
+    return this.toolbarWindow;
+  }
+
+  public setFrameFullScreen(): void {
+    if (this.frameWindow && !this.frameWindow.isDestroyed()) {
+      const primaryDisplay = screen.getPrimaryDisplay();
+      this.frameWindow.setBounds(primaryDisplay.bounds);
+    }
   }
 
   public openDashboardWindow(view: 'library' | 'settings' = 'library'): BrowserWindow {
@@ -155,6 +253,14 @@ export class WindowManager {
   }
 
   public closeAllAuxiliaryWindows(): void {
+    if (this.frameWindow) {
+      this.frameWindow.close();
+      this.frameWindow = null;
+    }
+    if (this.toolbarWindow) {
+      this.toolbarWindow.close();
+      this.toolbarWindow = null;
+    }
     if (this.dashboardWindow) {
       this.dashboardWindow.close();
       this.dashboardWindow = null;

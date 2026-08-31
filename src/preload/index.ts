@@ -2,13 +2,17 @@ import { contextBridge, ipcRenderer } from 'electron';
 import { CaptureSource, RecorderSettings, RecordingItem, RegionBounds, SystemHardwareInfo } from '../shared/types';
 
 export const electronAPI = {
-  // Capture Sources
+  // Capture Sources & Frame
   getSources: (): Promise<CaptureSource[]> => ipcRenderer.invoke('capture:get-sources'),
+  getFrameBounds: (): Promise<RegionBounds> => ipcRenderer.invoke('frame:get-bounds'),
+  setFrameFullScreen: () => ipcRenderer.send('frame:set-fullscreen'),
+
+  // Region Selector Legacy Helpers
   openRegionSelector: (): Promise<RegionBounds | null> => ipcRenderer.invoke('capture:open-region-selector'),
   sendRegionSelected: (bounds: RegionBounds) => ipcRenderer.send('capture:region-selected', bounds),
   cancelRegionSelection: () => ipcRenderer.send('capture:region-cancelled'),
 
-  // Mouse Pass-Through to underlying applications
+  // Mouse Pass-Through
   setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send('overlay:set-ignore-mouse', ignore),
 
   // Primary Recording Lifecycle
@@ -48,6 +52,22 @@ export const electronAPI = {
     ipcRenderer.on('recording:completed', subscription);
     return () => {
       ipcRenderer.removeListener('recording:completed', subscription);
+    };
+  },
+
+  onRecordingStateChanged: (callback: (state: { status: string }) => void): (() => void) => {
+    const subscription = (_event: any, state: { status: string }) => callback(state);
+    ipcRenderer.on('recording:state-changed', subscription);
+    return () => {
+      ipcRenderer.removeListener('recording:state-changed', subscription);
+    };
+  },
+
+  onFrameBoundsUpdated: (callback: (bounds: RegionBounds) => void): (() => void) => {
+    const subscription = (_event: any, bounds: RegionBounds) => callback(bounds);
+    ipcRenderer.on('frame:bounds-updated', subscription);
+    return () => {
+      ipcRenderer.removeListener('frame:bounds-updated', subscription);
     };
   },
 
