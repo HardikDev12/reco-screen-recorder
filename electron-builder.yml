@@ -1,0 +1,36 @@
+appId: com.hardikprajapati.reco
+productName: Reco
+copyright: Copyright © 2026 Hardik Prajapati
+
+directories:
+  output: dist
+  buildResources: resources
+
+files:
+  - dist-electron/**/*
+  - dist/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  requestedExecutionLevel: asInvoker
+  signAndEditExecutable: false
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+  allowElevation: false
+  runAfterFinish: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Reco
+
+portable:
+  artifactName: ${productName}-Portable-${version}.${ext}

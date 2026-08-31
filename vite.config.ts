@@ -1,0 +1,54 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import electron from 'vite-plugin-electron';
+import renderer from 'vite-plugin-electron-renderer';
+import path from 'node:path';
+
+export default defineConfig({
+  plugins: [
+    tailwindcss(),
+    react(),
+    electron([
+      {
+        entry: 'src/main/index.ts',
+        vite: {
+          build: {
+            outDir: 'dist-electron/main',
+            rollupOptions: {
+              external: ['electron', 'child_process', 'fs', 'path', 'os']
+            }
+          }
+        }
+      },
+      {
+        entry: 'src/preload/index.ts',
+        vite: {
+          build: {
+            outDir: 'dist-electron/preload'
+          }
+        }
+      }
+    ]),
+    renderer()
+  ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        overlay: path.resolve(__dirname, 'overlay.html'),
+        main: path.resolve(__dirname, 'index.html'),
+        hud: path.resolve(__dirname, 'hud.html'),
+        region: path.resolve(__dirname, 'region.html'),
+        webcam: path.resolve(__dirname, 'webcam.html')
+      }
+    }
+  },
+  server: {
+    port: 5173
+  }
+});
