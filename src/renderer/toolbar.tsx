@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom/client';
 import {
   Square,
@@ -50,10 +50,15 @@ const ToolbarApp: React.FC = () => {
     stopRecording
   } = useMediaRecording();
 
+  const isRecordingRef = useRef(isRecording);
+  isRecordingRef.current = isRecording;
+  const togglePauseRef = useRef(togglePause);
+  togglePauseRef.current = togglePause;
+
   const handleTogglePause = useCallback(async () => {
-    if (!isRecording) return;
-    await togglePause();
-  }, [isRecording, togglePause]);
+    if (!isRecordingRef.current) return;
+    await togglePauseRef.current();
+  }, []);
 
   useEffect(() => {
     window.electronAPI.getSettings().then((s) => {
@@ -83,7 +88,7 @@ const ToolbarApp: React.FC = () => {
       unsubTogglePause();
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [initMicrophoneMeter, handleTogglePause]);
+  }, []); // Run strictly once on mount
 
   const formatTime = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);

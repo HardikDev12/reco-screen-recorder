@@ -10,29 +10,47 @@ export function useMediaRecording() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<any>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const recordingAudioContextRef = useRef<AudioContext | null>(null);
+  const micMeterAudioContextRef = useRef<AudioContext | null>(null);
   const micAnalyserRef = useRef<AnalyserNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const activeRecordingStreamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const isMeterInitializedRef = useRef<boolean>(false);
 
-  // Initialize or update microphone level monitor (isolated from heavy screen capture)
+  // Initialize or update microphone level monitor (strictly singleton AudioContext)
   const initMicrophoneMeter = useCallback(async (settings: RecorderSettings) => {
     try {
-      // Clean up previous mic stream if disabled or changing
-      if (micStreamRef.current) {
-        micStreamRef.current.getTracks().forEach((t) => t.stop());
-        micStreamRef.current = null;
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-
       if (!settings.captureMicrophone) {
+        if (micStreamRef.current) {
+          micStreamRef.current.getTracks().forEach((t) => t.stop());
+          micStreamRef.current = null;
+        }
+        if (micMeterAudioContextRef.current) {
+          try {
+            micMeterAudioContextRef.current.close();
+          } catch (e) {}
+          micMeterAudioContextRef.current = null;
+        }
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+        isMeterInitializedRef.current = false;
         setMicLevel(0);
         setIsClipping(false);
         return;
+      }
+
+      if (isMeterInitializedRef.current && micMeterAudioContextRef.current) {
+        return; // Already running stably
+      }
+
+      // Clean up previous context before creating
+      if (micMeterAudioContextRef.current) {
+        try {
+          micMeterAudioContextRef.current.close();
+        } catch (e) {}
       }
 
       const micStream = await navigator.mediaDevices.getUserMedia({
@@ -58,29 +76,38 @@ export function useMediaRecording() {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({
         sampleRate: 48000
       });
+      micMeterAudioContextRef.current = audioCtx;
+
       const micSource = audioCtx.createMediaStreamSource(micStream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 64;
       micSource.connect(analyser);
       micAnalyserRef.current = analyser;
+      isMeterInitializedRef.current = true;
 
       const dataArray = new Uint8Array(32);
-      const updateMeter = () => {
+      let lastUpdate = 0;
+
+      const updateMeter = (timestamp: number) => {
         if (micAnalyserRef.current) {
-          micAnalyserRef.current.getByteFrequencyData(dataArray);
-          let maxVal = 0;
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i++) {
-            sum += dataArray[i];
-            if (dataArray[i] > maxVal) maxVal = dataArray[i];
+          // Throttle UI React state updates to 15fps (~66ms) to avoid high re-render thrashing
+          if (timestamp - lastUpdate > 66) {
+            lastUpdate = timestamp;
+            micAnalyserRef.current.getByteFrequencyData(dataArray);
+            let maxVal = 0;
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+              sum += dataArray[i];
+              if (dataArray[i] > maxVal) maxVal = dataArray[i];
+            }
+            const avg = sum / dataArray.length;
+            setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
+            setIsClipping(maxVal >= 250);
           }
-          const avg = sum / dataArray.length;
-          setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
-          setIsClipping(maxVal >= 250);
         }
         animationFrameRef.current = requestAnimationFrame(updateMeter);
       };
-      updateMeter();
+      animationFrameRef.current = requestAnimationFrame(updateMeter);
     } catch (err) {
       console.warn('Microphone meter initialization notice:', err);
     }
@@ -115,16 +142,16 @@ export function useMediaRecording() {
     });
 
     // 2. Audio Processing Graph
-    if (audioContextRef.current) {
+    if (recordingAudioContextRef.current) {
       try {
-        audioContextRef.current.close();
+        recordingAudioContextRef.current.close();
       } catch (e) {}
     }
 
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({
       sampleRate: 48000
     });
-    audioContextRef.current = audioCtx;
+    recordingAudioContextRef.current = audioCtx;
 
     // Studio Dynamics Limiter / Compressor
     const compressor = audioCtx.createDynamicsCompressor();
@@ -298,11 +325,11 @@ export function useMediaRecording() {
       activeRecordingStreamRef.current = null;
     }
 
-    if (audioContextRef.current) {
+    if (recordingAudioContextRef.current) {
       try {
-        audioContextRef.current.close();
+        recordingAudioContextRef.current.close();
       } catch (e) {}
-      audioContextRef.current = null;
+      recordingAudioContextRef.current = null;
     }
 
     setIsRecording(false);
@@ -322,9 +349,14 @@ export function useMediaRecording() {
       if (activeRecordingStreamRef.current) {
         activeRecordingStreamRef.current.getTracks().forEach((t) => t.stop());
       }
-      if (audioContextRef.current) {
+      if (recordingAudioContextRef.current) {
         try {
-          audioContextRef.current.close();
+          recordingAudioContextRef.current.close();
+        } catch (e) {}
+      }
+      if (micMeterAudioContextRef.current) {
+        try {
+          micMeterAudioContextRef.current.close();
         } catch (e) {}
       }
     };
