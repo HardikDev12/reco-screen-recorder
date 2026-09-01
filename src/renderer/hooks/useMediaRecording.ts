@@ -260,13 +260,35 @@ export const useMediaRecording = () => {
         throw new Error('Main process FFmpeg initialization failed');
       }
 
-      // Start MediaRecorder piping
+      // Select optimal MediaRecorder MIME type for active engine & container format
       let mimeType = 'video/webm;codecs=vp9,opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm;codecs=vp8,opus';
-      }
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm';
+      if (startResult.engine === 'native') {
+        if (settings.defaultFormat === 'mp4') {
+          if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1,mp4a.40.2')) {
+            mimeType = 'video/mp4;codecs=avc1,mp4a.40.2';
+          } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+            mimeType = 'video/mp4';
+          } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+            mimeType = 'video/webm;codecs=vp9,opus';
+          } else {
+            mimeType = 'video/webm';
+          }
+        } else {
+          if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+            mimeType = 'video/webm;codecs=vp9,opus';
+          } else {
+            mimeType = 'video/webm';
+          }
+        }
+      } else {
+        // FFmpeg engine accepts WebM stream on stdin pipe:0
+        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+          mimeType = 'video/webm;codecs=vp9,opus';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
+          mimeType = 'video/webm;codecs=vp8,opus';
+        } else {
+          mimeType = 'video/webm';
+        }
       }
 
       const recorder = new MediaRecorder(stream, {

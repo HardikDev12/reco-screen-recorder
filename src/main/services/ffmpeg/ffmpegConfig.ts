@@ -11,8 +11,9 @@ export const FFMPEG_CONFIG = {
   // Official fallback source if GitHub Release is being published
   FALLBACK_DIRECT_URL: 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip',
   
-  // Version metadata
+  // Version metadata & Pinned SHA-256
   VERSION: '9.0.1-essentials',
+  EXPECTED_SHA256: '0d372aa805828ad19d11b7558b87c78aff589ed47254bd9ed0060f9ac34b469a',
   
   // Target Managed Dependency Paths in LocalAppData (per-user, no admin required)
   getManagedBaseDir(): string {

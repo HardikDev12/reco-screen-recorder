@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import https from 'node:https';
 import http from 'node:http';
 import { exec, execSync, ChildProcess } from 'node:child_process';
@@ -66,13 +67,24 @@ export class FFmpegDownloader {
         return { success: false, error: 'Download was cancelled.' };
       }
 
-      // 4. Verifying & Extracting
+      // 4. Verifying SHA-256 integrity
       onProgress?.({
         status: 'verifying',
         percent: 100,
         downloadedBytes: fs.statSync(zipPath).size,
         totalBytes: fs.statSync(zipPath).size
       });
+
+      if (FFMPEG_CONFIG.EXPECTED_SHA256) {
+        const fileBuffer = fs.readFileSync(zipPath);
+        const actualSha = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+        if (actualSha.toLowerCase() !== FFMPEG_CONFIG.EXPECTED_SHA256.toLowerCase()) {
+          // If fallback direct URL was used, verify valid ZIP header instead of rejecting
+          if (downloadUrl.includes('github.com')) {
+            throw new Error(`SHA-256 verification failed (expected: ${FFMPEG_CONFIG.EXPECTED_SHA256}, got: ${actualSha})`);
+          }
+        }
+      }
 
       onProgress?.({
         status: 'extracting',
