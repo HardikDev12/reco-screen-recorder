@@ -26,11 +26,11 @@
   "dependencies": {},
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.9",
-    "@types/node": "^22.13.0",
+    "@types/node": "^26.4.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "cross-env": "^7.0.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "cross-env": "^10.1.0",
     "electron": "^44.0.0",
     "electron-builder": "^26.15.3",
     "lucide-react": "^1.16.0",
@@ -39,10 +39,10 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss": "^4.0.9",
-    "typescript": "^5.7.3",
-    "vite": "^6.1.0",
-    "vite-plugin-electron": "^0.29.0",
-    "vite-plugin-electron-renderer": "^0.14.6"
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vite-plugin-electron": "^1.1.1",
+    "vite-plugin-electron-renderer": "^1.0.0"
   },
   "overrides": {
     "tar": "^7.5.3"
