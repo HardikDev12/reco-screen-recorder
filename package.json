@@ -10,7 +10,8 @@
     "build:electron": "tsc -p tsconfig.node.json && vite build",
     "pack": "cross-env CSC_IDENTITY_AUTO=0 electron-builder --dir --publish never && node scripts/patch-icon.js",
     "dist": "cross-env CSC_IDENTITY_AUTO=0 electron-builder --publish never && node scripts/patch-icon.js",
-    "dist:portable": "cross-env CSC_IDENTITY_AUTO=0 electron-builder --win portable --publish never"
+    "dist:portable": "cross-env CSC_IDENTITY_AUTO=0 electron-builder --win portable --publish never",
+    "pack:ffmpeg": "node scripts/build-release-assets.js"
   },
   "keywords": [
     "reco",

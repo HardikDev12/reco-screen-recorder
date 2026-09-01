@@ -25,7 +25,13 @@ import {
   Monitor,
   Keyboard,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  Check,
+  RefreshCw,
+  XCircle,
+  Zap,
+  Boxes
 } from 'lucide-react';
 import {
   RecorderSettings,
@@ -33,14 +39,20 @@ import {
   SystemHardwareInfo,
   EncoderChoice,
   CountdownChoice,
-  OutputFormatChoice
+  OutputFormatChoice,
+  EngineChoice,
+  EngineInfo,
+  FFmpegDownloadProgress
 } from '../shared/types';
 
 export const App: React.FC = () => {
   const [activeMainTab, setActiveMainTab] = useState<'library' | 'settings' | 'about'>('library');
-  const [activeSettingsSection, setActiveSettingsSection] = useState<'general' | 'audio' | 'gpu' | 'storage' | 'shortcuts'>('general');
+  const [activeSettingsSection, setActiveSettingsSection] = useState<'general' | 'engine' | 'audio' | 'gpu' | 'storage' | 'shortcuts'>('general');
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
   const [hwInfo, setHwInfo] = useState<SystemHardwareInfo | null>(null);
+  const [engineInfo, setEngineInfo] = useState<EngineInfo | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<FFmpegDownloadProgress | null>(null);
+  const [isInstallingFFmpeg, setIsInstallingFFmpeg] = useState(false);
   const [selectedLegalDoc, setSelectedLegalDoc] = useState<'license' | 'thirdparty' | 'privacy' | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
@@ -49,6 +61,7 @@ export const App: React.FC = () => {
     framerate: 60,
     resolution: '1080p',
     encoder: 'auto',
+    recordingEngine: 'auto',
     captureMicrophone: true,
     captureSystemAudio: true,
     showWebcam: false,
@@ -66,6 +79,10 @@ export const App: React.FC = () => {
     setRecordings(recs);
     const hw = await window.electronAPI.getHardwareInfo();
     setHwInfo(hw);
+    if (window.electronAPI.getEngineInfo) {
+      const eng = await window.electronAPI.getEngineInfo();
+      setEngineInfo(eng);
+    }
   };
 
   useEffect(() => {
@@ -80,15 +97,80 @@ export const App: React.FC = () => {
       loadData();
     });
 
+    let unsubProgress: (() => void) | undefined;
+    if (window.electronAPI.onFFmpegDownloadProgress) {
+      unsubProgress = window.electronAPI.onFFmpegDownloadProgress((prog) => {
+        setDownloadProgress(prog);
+        if (prog.status === 'completed' || prog.status === 'error' || prog.status === 'cancelled') {
+          setIsInstallingFFmpeg(false);
+          loadData();
+        }
+      });
+    }
+
     return () => {
       unsubView();
       unsubCompleted();
+      if (unsubProgress) unsubProgress();
     };
   }, []);
 
   const handleUpdateSettings = async (newSettings: Partial<RecorderSettings>) => {
     const updated = await window.electronAPI.saveSettings(newSettings);
     setSettings(updated);
+    if (newSettings.recordingEngine && window.electronAPI.setEnginePreference) {
+      const eng = await window.electronAPI.setEnginePreference(newSettings.recordingEngine);
+      setEngineInfo(eng);
+    }
+  };
+
+  const handleInstallFFmpeg = async () => {
+    if (!window.electronAPI.installManagedFFmpeg) return;
+    setIsInstallingFFmpeg(true);
+    setDownloadProgress({
+      status: 'downloading',
+      percent: 0,
+      downloadedBytes: 0,
+      totalBytes: 0
+    });
+    try {
+      const res = await window.electronAPI.installManagedFFmpeg();
+      if (!res.success && res.error) {
+        setDownloadProgress({
+          status: 'error',
+          percent: 0,
+          downloadedBytes: 0,
+          totalBytes: 0,
+          error: res.error
+        });
+      }
+    } catch (e: any) {
+      setDownloadProgress({
+        status: 'error',
+        percent: 0,
+        downloadedBytes: 0,
+        totalBytes: 0,
+        error: e?.message || 'Download failed'
+      });
+    } finally {
+      setIsInstallingFFmpeg(false);
+      loadData();
+    }
+  };
+
+  const handleCancelDownload = () => {
+    if (window.electronAPI.cancelFFmpegDownload) {
+      window.electronAPI.cancelFFmpegDownload();
+      setIsInstallingFFmpeg(false);
+      setDownloadProgress(null);
+    }
+  };
+
+  const handleRemoveFFmpeg = async () => {
+    if (window.electronAPI.removeManagedFFmpeg) {
+      await window.electronAPI.removeManagedFFmpeg();
+      loadData();
+    }
   };
 
   const handleSelectDirectory = async () => {
@@ -310,6 +392,18 @@ export const App: React.FC = () => {
               </button>
 
               <button
+                onClick={() => setActiveSettingsSection('engine')}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-left ${
+                  activeSettingsSection === 'engine'
+                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Boxes className="w-3.5 h-3.5" />
+                <span>Engine & FFmpeg</span>
+              </button>
+
+              <button
                 onClick={() => setActiveSettingsSection('audio')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-left ${
                   activeSettingsSection === 'audio'
@@ -360,6 +454,224 @@ export const App: React.FC = () => {
 
             {/* Right Settings Content Panels */}
             <div className="flex-1 p-6 overflow-y-auto space-y-5">
+              {/* ENGINE & FFMPEG ESSENTIALS SECTION */}
+              {activeSettingsSection === 'engine' && (
+                <div className="space-y-5">
+                  <div className="pb-3 border-b border-white/10">
+                    <h2 className="text-sm font-bold text-white">Recording Engine & Dependencies</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Configure the active capture engine and optional FFmpeg Essentials dependency
+                    </p>
+                  </div>
+
+                  {/* Engine Selection Card */}
+                  <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-xs font-bold text-slate-200 block">Recording Engine</label>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Select your preferred capture and encoding architecture
+                        </p>
+                      </div>
+                      {engineInfo && (
+                        <span className={`text-[10px] px-2.5 py-1 rounded-md font-bold border ${
+                          engineInfo.currentEngine === 'ffmpeg'
+                            ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                            : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        }`}>
+                          Active: {engineInfo.currentEngine === 'ffmpeg' ? 'FFmpeg Engine' : 'Windows Native'}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 pt-1">
+                      {[
+                        {
+                          id: 'auto',
+                          title: 'Automatic (Recommended)',
+                          desc: 'Uses Windows capabilities offline; automatically uses FFmpeg when available'
+                        },
+                        {
+                          id: 'native',
+                          title: 'Windows Native',
+                          desc: '100% Offline, zero external dependencies, native direct file streaming'
+                        },
+                        {
+                          id: 'ffmpeg',
+                          title: 'FFmpeg Engine',
+                          desc: 'Hardware NVENC/AMF/QSV encoding and faststart MP4 remuxing'
+                        }
+                      ].map((eng) => (
+                        <button
+                          key={eng.id}
+                          onClick={() => handleUpdateSettings({ recordingEngine: eng.id as EngineChoice })}
+                          className={`p-3 rounded-lg text-left border transition flex flex-col justify-between ${
+                            (settings.recordingEngine || 'auto') === eng.id
+                              ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-sm'
+                              : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <p className="text-xs font-bold text-slate-200 mb-1">{eng.title}</p>
+                            <p className="text-[10px] text-slate-400 leading-relaxed">{eng.desc}</p>
+                          </div>
+                          {(settings.recordingEngine || 'auto') === eng.id && (
+                            <div className="flex items-center gap-1 text-[10px] text-indigo-400 font-bold mt-2">
+                              <Check className="w-3 h-3" /> Selected
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* FFmpeg Essentials Manager Card */}
+                  <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xs font-bold text-slate-200">FFmpeg Essentials</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Optional component for GPU hardware acceleration and advanced codec processing
+                        </p>
+                      </div>
+
+                      {engineInfo?.ffmpegInfo.installed ? (
+                        <span className={`text-[10px] px-2.5 py-1 rounded-md font-bold border ${
+                          engineInfo.ffmpegInfo.source === 'managed'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                        }`}>
+                          {engineInfo.ffmpegInfo.source === 'managed'
+                            ? 'Installed (RECO Managed)'
+                            : engineInfo.ffmpegInfo.source === 'system'
+                            ? 'Detected on System PATH'
+                            : 'Bundled'}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2.5 py-1 rounded-md bg-slate-800 text-slate-400 font-bold border border-white/10">
+                          Not Installed
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Installed Details */}
+                    {engineInfo?.ffmpegInfo.installed ? (
+                      <div className="space-y-2.5 bg-slate-950/60 p-3 rounded-lg border border-white/5 text-xs">
+                        <div className="flex items-center justify-between text-slate-300">
+                          <span className="text-slate-400">Version:</span>
+                          <span className="font-mono text-[11px] text-indigo-300 font-bold">
+                            {engineInfo.ffmpegInfo.version || '9.0.1-essentials'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-300">
+                          <span className="text-slate-400">Location:</span>
+                          <span className="font-mono text-[10px] text-slate-300 truncate max-w-xs" title={engineInfo.ffmpegInfo.path}>
+                            {engineInfo.ffmpegInfo.path}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-300">
+                          <span className="text-slate-400">Hardware Encoders:</span>
+                          <div className="flex items-center gap-1.5 text-[10px]">
+                            {engineInfo.ffmpegInfo.capabilities.hasNvidia && (
+                              <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">NVENC</span>
+                            )}
+                            {engineInfo.ffmpegInfo.capabilities.hasAmd && (
+                              <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">AMF</span>
+                            )}
+                            {engineInfo.ffmpegInfo.capabilities.hasIntel && (
+                              <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">QSV</span>
+                            )}
+                            {engineInfo.ffmpegInfo.capabilities.hasLibx264 && (
+                              <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">x264</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions for Managed FFmpeg */}
+                        {engineInfo.ffmpegInfo.source === 'managed' && (
+                          <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                            <button
+                              onClick={handleInstallFFmpeg}
+                              disabled={isInstallingFFmpeg}
+                              className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold transition border border-white/10 flex items-center gap-1.5"
+                            >
+                              <RefreshCw className="w-3 h-3 text-indigo-400" /> Check for Updates
+                            </button>
+                            <button
+                              onClick={handleRemoveFFmpeg}
+                              disabled={isInstallingFFmpeg}
+                              className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 text-xs font-semibold transition border border-rose-500/20 flex items-center gap-1.5"
+                            >
+                              <Trash2 className="w-3 h-3" /> Remove FFmpeg
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* Not Installed - Download Flow */
+                      <div className="space-y-3">
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          RECO works 100% offline using Windows Native recording. You can optionally download our official FFmpeg Essentials package for advanced GPU acceleration and direct NVENC/AMF encoding.
+                        </p>
+
+                        {downloadProgress && downloadProgress.status !== 'completed' ? (
+                          <div className="bg-slate-950/80 p-3.5 rounded-lg border border-indigo-500/30 space-y-2.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-bold text-slate-200 capitalize">
+                                {downloadProgress.status === 'downloading' && `Downloading FFmpeg Essentials (${downloadProgress.percent}%)`}
+                                {downloadProgress.status === 'verifying' && 'Verifying SHA-256 integrity...'}
+                                {downloadProgress.status === 'extracting' && 'Extracting and installing...'}
+                                {downloadProgress.status === 'error' && `Error: ${downloadProgress.error || 'Failed'}`}
+                              </span>
+                              {downloadProgress.totalBytes > 0 && (
+                                <span className="font-mono text-[11px] text-slate-400">
+                                  {(downloadProgress.downloadedBytes / (1024 * 1024)).toFixed(1)} / {(downloadProgress.totalBytes / (1024 * 1024)).toFixed(1)} MB
+                                </span>
+                              )}
+                            </div>
+
+                            {downloadProgress.status !== 'error' && (
+                              <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                                <div
+                                  className="h-full bg-indigo-500 transition-all duration-200"
+                                  style={{ width: `${downloadProgress.percent}%` }}
+                                />
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-end gap-2 pt-1">
+                              {downloadProgress.status === 'downloading' && (
+                                <button
+                                  onClick={handleCancelDownload}
+                                  className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300"
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                              {downloadProgress.status === 'error' && (
+                                <button
+                                  onClick={handleInstallFFmpeg}
+                                  className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white"
+                                >
+                                  Retry Download
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={handleInstallFFmpeg}
+                            disabled={isInstallingFFmpeg}
+                            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-sm flex items-center gap-2"
+                          >
+                            <Download className="w-4 h-4" /> Download & Install FFmpeg Essentials
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               {activeSettingsSection === 'general' && (
                 <div className="space-y-5">
                   <div className="pb-3 border-b border-white/10">

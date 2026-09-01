@@ -20,9 +20,8 @@ files:
   - asset/icon.png
   - asset/icon.ico
 
-extraResources:
-  - from: bin/win64/ffmpeg.exe
-    to: bin/win64/ffmpeg.exe
+
+
 
 win:
   icon: asset/icon.ico

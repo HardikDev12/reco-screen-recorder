@@ -86,6 +86,21 @@ export const electronAPI = {
   resetDefaultSaveLocation: (): Promise<string> => ipcRenderer.invoke('settings:reset-default-location'),
   openSaveLocationFolder: () => ipcRenderer.invoke('settings:open-folder'),
 
+  // Engine & FFmpeg Dependency APIs
+  getEngineInfo: (): Promise<import('../shared/types').EngineInfo> => ipcRenderer.invoke('engine:get-info'),
+  setEnginePreference: (preference: import('../shared/types').EngineChoice): Promise<import('../shared/types').EngineInfo> =>
+    ipcRenderer.invoke('engine:set-preference', preference),
+  installManagedFFmpeg: (): Promise<{ success: boolean; error?: string }> => ipcRenderer.invoke('ffmpeg:install'),
+  cancelFFmpegDownload: () => ipcRenderer.send('ffmpeg:cancel-download'),
+  removeManagedFFmpeg: (): Promise<boolean> => ipcRenderer.invoke('ffmpeg:remove'),
+  onFFmpegDownloadProgress: (callback: (progress: import('../shared/types').FFmpegDownloadProgress) => void): (() => void) => {
+    const subscription = (_event: any, progress: import('../shared/types').FFmpegDownloadProgress) => callback(progress);
+    ipcRenderer.on('ffmpeg:download-progress', subscription);
+    return () => {
+      ipcRenderer.removeListener('ffmpeg:download-progress', subscription);
+    };
+  },
+
   // Hardware Info
   getHardwareInfo: (): Promise<SystemHardwareInfo> => ipcRenderer.invoke('system:get-hardware-info'),
 

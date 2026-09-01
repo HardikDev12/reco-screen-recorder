@@ -23,11 +23,45 @@ export type CountdownChoice = 0 | 3 | 5;
 export type OutputFormatChoice = 'mp4' | 'mkv' | 'webm';
 export type AutoConvertChoice = 'never' | 'ask' | 'always';
 
+export type EngineChoice = 'auto' | 'native' | 'ffmpeg';
+export type EngineType = 'native' | 'ffmpeg';
+export type FFmpegSource = 'managed' | 'system' | 'bundled' | 'none';
+
+export interface FFmpegDependencyInfo {
+  installed: boolean;
+  source: FFmpegSource;
+  version?: string;
+  path?: string;
+  capabilities: {
+    hasNvidia: boolean;
+    hasAmd: boolean;
+    hasIntel: boolean;
+    hasLibx264: boolean;
+    hasAac: boolean;
+  };
+}
+
+export interface EngineInfo {
+  currentEngine: EngineType;
+  selectedPreference: EngineChoice;
+  nativeAvailable: boolean;
+  ffmpegInfo: FFmpegDependencyInfo;
+}
+
+export interface FFmpegDownloadProgress {
+  status: 'idle' | 'downloading' | 'verifying' | 'extracting' | 'completed' | 'error' | 'cancelled';
+  percent: number;
+  downloadedBytes: number;
+  totalBytes: number;
+  error?: string;
+}
+
 export interface RecorderSettings {
   outputPath: string;
   framerate: FramerateChoice;
   resolution: ResolutionChoice;
   encoder: EncoderChoice;
+  recordingEngine?: EngineChoice;
   captureMicrophone: boolean;
   captureSystemAudio: boolean;
   selectedMicrophoneId?: string;
@@ -85,3 +119,4 @@ export interface SystemHardwareInfo {
   ffmpegFound: boolean;
   ffmpegPath?: string;
 }
+
