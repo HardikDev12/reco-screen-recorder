@@ -3,11 +3,15 @@ const path = require('path');
 const fs = require('fs');
 
 async function patch() {
-  const exePath = path.join(__dirname, '../dist/win-unpacked/Reco.exe');
+  const possiblePaths = [
+    path.join(__dirname, '../release/win-unpacked/Reco.exe'),
+    path.join(__dirname, '../dist/win-unpacked/Reco.exe')
+  ];
+  const exePath = possiblePaths.find(p => fs.existsSync(p));
   const iconPath = path.join(__dirname, '../asset/icon.ico');
 
-  if (!fs.existsSync(exePath)) {
-    console.error('Reco.exe not found at', exePath);
+  if (!exePath) {
+    console.error('Reco.exe not found in release or dist directories.');
     return;
   }
 

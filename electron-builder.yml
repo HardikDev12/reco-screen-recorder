@@ -1,22 +1,28 @@
 appId: com.hardikprajapati.reco
 productName: Reco
 copyright: Copyright © 2026 Hardik Prajapati
+compression: maximum
 
 directories:
-  output: dist
+  output: release
   buildResources: asset
 
 files:
   - dist-electron/**/*
   - dist/**/*
-  - asset/**/*
-  - package.json
+  - '!dist/**/*.map'
+  - '!dist/win-unpacked/**'
+  - '!dist/*.exe'
+  - '!dist/*.zip'
+  - '!dist/*.blockmap'
+  - '!dist/builder-debug.yml'
+  - '!dist/builder-effective-config.yaml'
+  - asset/icon.png
+  - asset/icon.ico
 
 extraResources:
-  - from: bin/win64
-    to: bin/win64
-    filter:
-      - '**/*'
+  - from: bin/win64/ffmpeg.exe
+    to: bin/win64/ffmpeg.exe
 
 win:
   icon: asset/icon.ico
@@ -48,3 +54,4 @@ nsis:
 
 portable:
   artifactName: RECO-Portable.${ext}
+

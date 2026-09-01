@@ -38,6 +38,9 @@ export default defineConfig({
     }
   },
   build: {
+    sourcemap: false,
+    minify: 'esbuild',
+    reportCompressedSize: false,
     rollupOptions: {
       input: {
         frame: path.resolve(__dirname, 'frame.html'),

@@ -4,8 +4,9 @@
   "description": "Simple, high-quality Windows screen recorder inspired by ShowMore",
   "main": "dist-electron/main/index.js",
   "scripts": {
+    "clean": "powershell -Command \"Remove-Item -Recurse -Force -ErrorAction SilentlyContinue dist, dist-electron, release\"",
     "dev": "vite",
-    "build": "tsc && vite build && electron-builder",
+    "build": "npm run clean && tsc -p tsconfig.node.json && vite build && electron-builder",
     "build:electron": "tsc -p tsconfig.node.json && vite build",
     "pack": "cross-env CSC_IDENTITY_AUTO=0 electron-builder --dir --publish never && node scripts/patch-icon.js",
     "dist": "cross-env CSC_IDENTITY_AUTO=0 electron-builder --publish never && node scripts/patch-icon.js",
@@ -22,11 +23,7 @@
   ],
   "author": "Hardik Prajapati",
   "license": "MIT",
-  "dependencies": {
-    "lucide-react": "^1.16.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.9",
     "@types/node": "^22.13.0",
@@ -36,8 +33,11 @@
     "cross-env": "^7.0.3",
     "electron": "^44.0.0",
     "electron-builder": "^26.15.3",
+    "lucide-react": "^1.16.0",
     "png-to-ico": "^3.0.2",
     "rcedit": "^5.0.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "tailwindcss": "^4.0.9",
     "typescript": "^5.7.3",
     "vite": "^6.1.0",

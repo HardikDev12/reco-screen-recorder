@@ -5,10 +5,9 @@ const { execSync } = require('child_process');
 function ensureFFmpeg() {
   const binDir = path.join(__dirname, '../bin/win64');
   const ffmpegExe = path.join(binDir, 'ffmpeg.exe');
-  const ffprobeExe = path.join(binDir, 'ffprobe.exe');
 
-  if (fs.existsSync(ffmpegExe) && fs.existsSync(ffprobeExe)) {
-    console.log('FFmpeg binaries already present at', binDir);
+  if (fs.existsSync(ffmpegExe)) {
+    console.log('FFmpeg binary already present at', binDir);
     return;
   }
 
@@ -20,12 +19,12 @@ function ensureFFmpeg() {
   const zipPath = path.join(__dirname, '../ffmpeg.zip');
   const tempExtract = path.join(__dirname, '../ffmpeg_temp');
 
-  const url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip';
+  const url = 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip';
 
   execSync(`curl.exe -L -o "${zipPath}" "${url}"`, { stdio: 'inherit' });
   execSync(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${tempExtract}' -Force"`, { stdio: 'inherit' });
 
-  // Locate ffmpeg.exe & ffprobe.exe in extracted folder
+  // Locate ffmpeg.exe in extracted folder
   const findFiles = (dir) => {
     let results = [];
     const list = fs.readdirSync(dir);
@@ -34,7 +33,7 @@ function ensureFFmpeg() {
       const stat = fs.statSync(full);
       if (stat.isDirectory()) {
         results = results.concat(findFiles(full));
-      } else if (file === 'ffmpeg.exe' || file === 'ffprobe.exe') {
+      } else if (file === 'ffmpeg.exe') {
         results.push(full);
       }
     }
